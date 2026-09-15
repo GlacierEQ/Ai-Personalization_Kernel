@@ -262,10 +262,6 @@ begin
   end loop;
 end $$;
 
-  loop
-    execute format('alter table apk.%I enable row level security;', t);
-  end loop;
-end $$;
 
 -- ---------------------------------------------------------------------------
 -- Grants: the service role (used by the connector) needs schema + table
