@@ -20,6 +20,7 @@ create schema if not exists apk;
 create or replace function apk.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at := now();
