@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glaciereq.dev/schemas/user-model.schema.json",
+  "title": "UserModel",
+  "description": "Compact always-active account user model (spec section 4). Loaded before task interpretation; personalization is not optional.",
+  "type": "object",
+  "properties": {
+    "identity": {
+      "type": "object",
+      "properties": {
+        "role": { "type": "string" },
+        "expertise_level": { "type": "string" },
+        "domains": { "type": "array", "items": { "type": "string" } },
+        "operating_environment": { "type": "string" }
+      },
+      "required": ["role"],
+      "additionalProperties": true
+    },
+    "expertise": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "interest_weights": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "epistemic_preferences": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "interaction_preferences": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "output_preferences": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "strategic_preferences": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "prohibitions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "active_goals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "correction_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "strategy_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "continuity_state": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "identity", "expertise", "interest_weights", "epistemic_preferences",
+    "interaction_preferences", "output_preferences", "strategic_preferences",
+    "prohibitions", "active_goals", "correction_refs", "strategy_refs", "continuity_state"
+  ],
+  "additionalProperties": false
+}

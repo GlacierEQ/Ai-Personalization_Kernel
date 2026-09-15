@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-personalization-kernel"
+version = "0.1.0"
+description = "Executable personalization-to-behavior binding kernel: typed memory, authority model, retrieval policy, correction ledger, action-policy scoring, reward model, and regression replay."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "GlacierEQ" }]
+keywords = ["personalization", "policy", "memory", "agents", "regression"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "jsonschema>=4.19"]
+
+[project.scripts]
+apk = "apk.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+apk = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

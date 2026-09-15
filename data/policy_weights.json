@@ -1,0 +1,45 @@
+{
+  "base_weights": {
+    "retrieve_personal_context": 0.99,
+    "retrieve_project_context": 0.96,
+    "retrieve_exact_history": 0.9,
+    "inspect_provider_state": 0.82,
+    "search_files": 0.6,
+    "search_web": 0.31,
+    "continue_existing_work": 0.93,
+    "execute_reversible_action": 0.7,
+    "verify_action": 0.85,
+    "answer_directly": 0.5,
+    "ask_question": 0.2,
+    "create_artifact": 0.5
+  },
+  "action_aliases": {
+    "generic_answer_without_context": "answer_directly",
+    "ask_user_to_repeat_known_info": "ask_question",
+    "retrieve_project_state": "retrieve_project_context",
+    "inspect_provider": "inspect_provider_state"
+  },
+  "retrieval_actions": [
+    "retrieve_personal_context",
+    "retrieve_project_context",
+    "retrieve_exact_history",
+    "inspect_provider_state",
+    "search_files",
+    "continue_existing_work",
+    "verify_action"
+  ],
+  "scope_weights": {
+    "conversation": 1.0,
+    "domain": 1.5,
+    "project": 2.0,
+    "global": 3.0
+  },
+  "promotion_multipliers": {
+    "observation": 1.0,
+    "preference": 1.0,
+    "strong_preference": 2.0,
+    "procedural_rule": 4.0
+  },
+  "base_correction_penalty": -5.0,
+  "invariant_hard_penalty": -1000000.0
+}

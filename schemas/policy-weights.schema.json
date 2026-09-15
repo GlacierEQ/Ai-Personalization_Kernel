@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glaciereq.dev/schemas/policy-weights.schema.json",
+  "title": "PolicyWeights",
+  "description": "Base action scores plus correction/scope modifier configuration (spec section 9).",
+  "type": "object",
+  "properties": {
+    "base_weights": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "action_aliases": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "retrieval_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "scope_weights": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "promotion_multipliers": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "base_correction_penalty": { "type": "number" },
+    "invariant_hard_penalty": { "type": "number" }
+  },
+  "required": [
+    "base_weights", "action_aliases", "retrieval_actions", "scope_weights",
+    "promotion_multipliers", "base_correction_penalty", "invariant_hard_penalty"
+  ],
+  "additionalProperties": false
+}

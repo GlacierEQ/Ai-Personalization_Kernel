@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glaciereq.dev/schemas/memory-object.schema.json",
+  "title": "MemoryObject",
+  "description": "Common metadata envelope for every typed memory record in the Ai-Personalization_Kernel canonical ledger (spec section 12).",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "type": {
+      "type": "string",
+      "enum": [
+        "identity",
+        "expertise",
+        "preference",
+        "negative_preference",
+        "interaction_rule",
+        "epistemic_preference",
+        "authority_rule",
+        "correction",
+        "failure_pattern",
+        "successful_strategy",
+        "failed_strategy",
+        "project_state",
+        "operator_decision",
+        "firsthand_observation",
+        "verified_external_fact",
+        "unverified_external_claim",
+        "resolution",
+        "superseded_state",
+        "tool_capability",
+        "provider_state",
+        "relationship",
+        "goal",
+        "constraint",
+        "temporary_state"
+      ]
+    },
+    "scope": { "type": "string", "enum": ["global", "project", "domain", "conversation"] },
+    "status": { "type": "string", "enum": ["active", "superseded", "resolved", "quarantined"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "source": { "type": "string" },
+    "source_refs": { "type": "array", "items": { "type": "string" } },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "valid_until": { "type": ["string", "null"], "format": "date-time" },
+    "supersedes": { "type": "array", "items": { "type": "string" } },
+    "superseded_by": { "type": "array", "items": { "type": "string" } },
+    "related_to": { "type": "array", "items": { "type": "string" } },
+    "content_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+    "payload": { "type": "object" }
+  },
+  "required": [
+    "id", "type", "scope", "status", "confidence", "source", "source_refs",
+    "created_at", "updated_at", "valid_from", "valid_until",
+    "supersedes", "superseded_by", "related_to", "content_hash", "payload"
+  ],
+  "additionalProperties": false
+}

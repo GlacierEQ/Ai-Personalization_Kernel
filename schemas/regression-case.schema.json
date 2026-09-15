@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glaciereq.dev/schemas/regression-case.schema.json",
+  "title": "RegressionCase",
+  "description": "Executable experience-replay case captured from a historical personalization failure (spec section 11).",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "state": { "type": "object" },
+    "action_taken": { "type": "string", "minLength": 1 },
+    "failure_class": { "type": "string", "minLength": 1 },
+    "user_correction": { "type": "string", "minLength": 1 },
+    "corrected_action": { "type": "string", "minLength": 1 },
+    "expected_policy_change": { "type": "string", "minLength": 1 },
+    "source_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": [
+    "state", "action_taken", "failure_class", "user_correction",
+    "corrected_action", "expected_policy_change", "source_refs"
+  ],
+  "additionalProperties": false
+}
