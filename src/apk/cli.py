@@ -5,6 +5,8 @@ Subcommands:
 - ``apk replay --cases <path>``    run regression replay (CI hard gate)
 - ``apk boot --demo``              run the 12-step boot contract on bundled demo data
 - ``apk metrics <eval_run.json>``  pretty-print an eval run's metrics
+- ``apk seed --check|--write``     verify or regenerate canonical seed data
+- ``apk sync supabase``            write-through sync of the ledger into Supabase
 """
 
 from __future__ import annotations
@@ -174,6 +176,57 @@ def cmd_metrics(args: argparse.Namespace) -> int:
     return 0 if data.get("passed", True) else 1
 
 
+def cmd_seed(args: argparse.Namespace) -> int:
+    import subprocess
+
+    script = _repo_root() / "scripts" / "generate_seed_data.py"
+    cmd = [sys.executable, str(script)]
+    if args.check:
+        cmd.append("--check")
+    if args.data_dir:
+        cmd += ["--data-dir", args.data_dir]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    sys.stdout.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    return proc.returncode
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    if args.sink != "supabase":
+        print(f"unknown sink {args.sink!r}; supported: supabase", file=sys.stderr)
+        return 2
+    from apk.connectors.supabase import SupabaseConnector, build_rows_by_table
+
+    data_dir = Path(args.data_dir) if args.data_dir else _data_dir()
+    rows_by_table = build_rows_by_table(data_dir)
+    try:
+        connector = SupabaseConnector.from_env(
+            args.url, args.key_env, batch_size=args.batch_size, schema=args.schema
+        )
+    except Exception as exc:  # surfaced without secrets by construction
+        print(f"sync setup failed: {exc}", file=sys.stderr)
+        return 1
+    if args.dry_run:
+        report = connector.plan(rows_by_table)
+    elif args.no_verify:
+        # Explicitly unverified sync: allowed, but the report says so.
+        from apk.connectors.base import SyncReport
+
+        report = SyncReport(sink=connector.name, dry_run=False)
+        for table, rows in rows_by_table.items():
+            connector._sync_table(table, list(rows), report)  # noqa: SLF001
+        report.finish()
+    else:
+        report = connector.sync(rows_by_table)
+    print(json.dumps(report.to_dict(), indent=2, default=str))
+    if not report.ok:
+        print("SYNC FAILED", file=sys.stderr)
+        return 1
+    if args.dry_run:
+        print("dry-run only: no writes issued", file=sys.stderr)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="apk", description="Ai-Personalization_Kernel CLI")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -197,6 +250,26 @@ def build_parser() -> argparse.ArgumentParser:
     p_metrics = sub.add_parser("metrics", help="pretty-print an eval_run.json report")
     p_metrics.add_argument("eval_run", help="path to an eval_run.json produced by `apk replay`")
     p_metrics.set_defaults(func=cmd_metrics)
+
+    p_seed = sub.add_parser("seed", help="verify or regenerate canonical seed data")
+    p_seed.add_argument("--check", action="store_true",
+                        help="verify data/ matches generator output (CI drift gate)")
+    p_seed.add_argument("--data-dir", dest="data_dir", help="override data directory")
+    p_seed.set_defaults(func=cmd_seed)
+
+    p_sync = sub.add_parser("sync", help="write-through sync of the ledger into a sink")
+    p_sync.add_argument("sink", choices=["supabase"], help="target sink")
+    p_sync.add_argument("--url", required=True, help="Supabase project URL")
+    p_sync.add_argument("--key-env", dest="key_env", default="SUPABASE_SERVICE_ROLE_KEY",
+                        help="env var holding the service key (never pass the key itself)")
+    p_sync.add_argument("--schema", default="apk", help="PostgREST profile schema")
+    p_sync.add_argument("--data-dir", dest="data_dir", help="override data directory")
+    p_sync.add_argument("--batch-size", dest="batch_size", type=int, default=200)
+    p_sync.add_argument("--dry-run", dest="dry_run", action="store_true",
+                        help="plan only; zero network I/O")
+    p_sync.add_argument("--no-verify", dest="no_verify", action="store_true",
+                        help="skip readback verification (not recommended)")
+    p_sync.set_defaults(func=cmd_sync)
 
     return parser
 

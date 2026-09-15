@@ -18,6 +18,7 @@ from apk.reward import RewardModel
 from apk.replay import ExperienceReplay, EvalRun
 from apk.drift import DriftDetector
 from apk.boot import BootContract, BootReceipt, BootContractError
+from apk.connectors import SupabaseConnector, SyncError, SyncReport, SyncSink
 
 __version__ = "0.1.0"
 
@@ -51,4 +52,8 @@ __all__ = [
     "BootContract",
     "BootReceipt",
     "BootContractError",
+    "SupabaseConnector",
+    "SyncError",
+    "SyncReport",
+    "SyncSink",
 ]

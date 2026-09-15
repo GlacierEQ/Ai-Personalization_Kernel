@@ -1,23 +1,31 @@
 {
+  "action_aliases": {
+    "ask_user_to_repeat_known_info": "ask_question",
+    "generic_answer_without_context": "answer_directly",
+    "inspect_provider": "inspect_provider_state",
+    "retrieve_project_state": "retrieve_project_context"
+  },
+  "base_correction_penalty": -5.0,
   "base_weights": {
-    "retrieve_personal_context": 0.99,
-    "retrieve_project_context": 0.96,
-    "retrieve_exact_history": 0.9,
-    "inspect_provider_state": 0.82,
-    "search_files": 0.6,
-    "search_web": 0.31,
-    "continue_existing_work": 0.93,
-    "execute_reversible_action": 0.7,
-    "verify_action": 0.85,
     "answer_directly": 0.5,
     "ask_question": 0.2,
-    "create_artifact": 0.5
+    "continue_existing_work": 0.93,
+    "create_artifact": 0.5,
+    "execute_reversible_action": 0.7,
+    "inspect_provider_state": 0.82,
+    "retrieve_exact_history": 0.9,
+    "retrieve_personal_context": 0.99,
+    "retrieve_project_context": 0.96,
+    "search_files": 0.6,
+    "search_web": 0.31,
+    "verify_action": 0.85
   },
-  "action_aliases": {
-    "generic_answer_without_context": "answer_directly",
-    "ask_user_to_repeat_known_info": "ask_question",
-    "retrieve_project_state": "retrieve_project_context",
-    "inspect_provider": "inspect_provider_state"
+  "invariant_hard_penalty": -1000000.0,
+  "promotion_multipliers": {
+    "observation": 1.0,
+    "preference": 1.0,
+    "procedural_rule": 4.0,
+    "strong_preference": 2.0
   },
   "retrieval_actions": [
     "retrieve_personal_context",
@@ -31,15 +39,7 @@
   "scope_weights": {
     "conversation": 1.0,
     "domain": 1.5,
-    "project": 2.0,
-    "global": 3.0
-  },
-  "promotion_multipliers": {
-    "observation": 1.0,
-    "preference": 1.0,
-    "strong_preference": 2.0,
-    "procedural_rule": 4.0
-  },
-  "base_correction_penalty": -5.0,
-  "invariant_hard_penalty": -1000000.0
+    "global": 3.0,
+    "project": 2.0
+  }
 }

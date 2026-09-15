@@ -1,15 +1,29 @@
 {
-  "identity": {
-    "role": "Forward-deployed software architect / AI systems integrator",
-    "expertise_level": "senior",
-    "domains": [
-      "software_architecture",
-      "distributed_systems",
-      "developer_tooling",
-      "ai_agent_systems"
-    ],
-    "operating_environment": "polyglot repos, CLI-first, CI/CD gated"
+  "active_goals": [
+    "ship the Ai-Personalization_Kernel executable core with real enforcement, not stubs",
+    "keep the CI regression gate green",
+    "expand the correction ledger as new failures are discovered",
+    "wire the Supabase canonical ledger through the connector plane (Phase E)"
+  ],
+  "continuity_state": {
+    "active_project": "GlacierEQ/Ai-Personalization_Kernel",
+    "last_verified_frontier": "deterministic seed generator + Supabase connector plane + CI drift gate",
+    "open_blockers": []
   },
+  "correction_refs": [
+    "answer_before_context_recovery",
+    "stale_state_reopening",
+    "unnecessary_clarification_loop",
+    "source_authority_inversion",
+    "premature_answering_invariant_breach"
+  ],
+  "epistemic_preferences": [
+    "prefers source-bearing evidence over unsupported summaries",
+    "requires exact quotations and provenance for claims",
+    "distinguishes observation from inference",
+    "expects live provider readback before status claims",
+    "skeptical of hallucinated citations"
+  ],
   "expertise": [
     "python",
     "typescript",
@@ -18,21 +32,17 @@
     "test-driven development",
     "git workflows"
   ],
-  "interest_weights": {
-    "software_architecture": 0.99,
-    "physics": 0.95,
-    "developer_tooling": 0.93,
-    "ai_agent_systems": 0.9,
-    "testing_and_verification": 0.88,
-    "television": 0.15
+  "identity": {
+    "domains": [
+      "software_architecture",
+      "distributed_systems",
+      "developer_tooling",
+      "ai_agent_systems"
+    ],
+    "expertise_level": "senior",
+    "operating_environment": "polyglot repos, CLI-first, CI/CD gated",
+    "role": "Forward-deployed software architect / AI systems integrator"
   },
-  "epistemic_preferences": [
-    "prefers source-bearing evidence over unsupported summaries",
-    "requires exact quotations and provenance for claims",
-    "distinguishes observation from inference",
-    "expects live provider readback before status claims",
-    "skeptical of hallucinated citations"
-  ],
   "interaction_preferences": [
     "context first, hard work second, answer last",
     "do not ask for information that can be retrieved",
@@ -41,20 +51,20 @@
     "avoid repetitive caveats",
     "do not flatten complex cumulative systems"
   ],
+  "interest_weights": {
+    "ai_agent_systems": 0.9,
+    "developer_tooling": 0.93,
+    "physics": 0.95,
+    "software_architecture": 0.99,
+    "television": 0.15,
+    "testing_and_verification": 0.88
+  },
   "output_preferences": [
     "structured output with deep hierarchy",
     "concise status after execution, not before",
     "polished external deliverables",
     "direct artifact links",
     "exact source anchors where necessary"
-  ],
-  "strategic_preferences": [
-    "maximum coherent progress",
-    "recover before recreating",
-    "continue before reconstructing",
-    "compound before replacing",
-    "repair forward",
-    "use tools and connectors aggressively when they create real progress"
   ],
   "prohibitions": [
     "ask_user_to_repeat_known_info",
@@ -65,25 +75,16 @@
     "collapse_polycentric_structures_into_one_canonical_replacement",
     "restart_known_work"
   ],
-  "active_goals": [
-    "ship the Ai-Personalization_Kernel executable core with real enforcement, not stubs",
-    "keep the CI regression gate green",
-    "expand the correction ledger as new failures are discovered"
-  ],
-  "correction_refs": [
-    "answer_before_context_recovery",
-    "stale_state_reopening",
-    "unnecessary_clarification_loop",
-    "source_authority_inversion",
-    "premature_answering_invariant_breach"
+  "strategic_preferences": [
+    "maximum coherent progress",
+    "recover before recreating",
+    "continue before reconstructing",
+    "compound before replacing",
+    "repair forward",
+    "use tools and connectors aggressively when they create real progress"
   ],
   "strategy_refs": [
     "ongoing_repository_work",
     "context_first_execution"
-  ],
-  "continuity_state": {
-    "active_project": "GlacierEQ/Ai-Personalization_Kernel",
-    "last_verified_frontier": "policy engine binding + regression replay implemented",
-    "open_blockers": []
-  }
+  ]
 }

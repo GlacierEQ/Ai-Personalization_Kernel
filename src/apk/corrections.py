@@ -220,7 +220,7 @@ class CorrectionLedger:
             last_seen=now,
             promotion_level=new_level,
             status="active",
-            source_refs=list({*existing.source_refs, *(source_refs or [])}),
+            source_refs=sorted({*existing.source_refs, *(source_refs or [])}),
             supersedes=[existing.id],
             superseded_by=[],
             related_patterns=existing.related_patterns,

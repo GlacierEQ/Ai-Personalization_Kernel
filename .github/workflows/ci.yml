@@ -30,6 +30,9 @@ jobs:
       - name: Validate schemas
         run: python scripts/validate_schemas.py
 
+      - name: Seed data drift gate
+        run: python scripts/generate_seed_data.py --check
+
       - name: Run test suite
         run: pytest -q
 

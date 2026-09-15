@@ -117,6 +117,12 @@ apk boot --demo
 # Replay the regression corpus against the current policy (CI hard gate)
 apk replay --cases data/regression_cases.jsonl
 
+# Verify seed data is generator-canonical (drift gate)
+python scripts/generate_seed_data.py --check
+
+# Dry-run a Supabase sync (zero network); real sync writes + verifies by readback
+apk sync supabase --url https://<project>.supabase.co --dry-run
+
 # Run the full test suite
 pytest -q
 ```
@@ -139,6 +145,8 @@ pytest -q
 | `apk.boot` | `BootContract` — the 12-step boot sequence orchestrator, producing an auditable `BootReceipt` |
 | `apk.cli` | `apk` console script: `validate`, `replay`, `boot`, `metrics` |
 
+| `apk.connectors` | Connector plane: `SyncSink` contract (plan / sync / verify), sink-agnostic |
+| `apk.connectors.supabase` | Idempotent, verified Supabase write-through (PostgREST, stdlib-only) |
 ## Enforcement philosophy
 
 This repository explicitly rejects "smallest usable" placeholder implementations. Every module
@@ -191,11 +199,35 @@ data/       Seed ledger: user_model.json, corrections.jsonl, preferences.jsonl,
             authority_rules.jsonl, regression_cases.jsonl, policy_weights.json
 src/apk/    The kernel itself
 tests/      pytest suite, including the enforcement suite
-scripts/    validate_schemas.py — CI schema gate
+scripts/    validate_schemas.py — CI schema gate;
+            generate_seed_data.py — single source of truth for data/ (CI drift gate)
+supabase/   migrations/0001_control_plane.sql — canonical section-14 schema (idempotent)
 ```
 
 All seed data uses a generic example "software architect" operator persona — no real personal
 data is bundled with this repository.
+
+## Connector plane & Supabase
+
+The JSONL ledger is canonical; external stores are verified projections. The connector plane
+(`apk.connectors`, contract in [`docs/CONNECTOR_PLANE.md`](./docs/CONNECTOR_PLANE.md)) is the seam
+an orchestrator such as `backend-ops` drives:
+
+- **`plan()`** — pure dry-run, zero network I/O;
+- **`sync()`** — idempotent upsert (primary key + `content_hash` skip), supersession-chain ordered;
+- **`verify()`** — mandatory live readback; a sync that is not read back is not complete.
+
+The Supabase sink ([`docs/SUPABASE_CONNECTOR.md`](./docs/SUPABASE_CONNECTOR.md)) is stdlib-only,
+retries 429/5xx with backoff, scrubs secrets from every report and error, and accepts keys via
+environment variable only. The migration creates the 13 section-14 tables in a dedicated `apk`
+schema with RLS locked by default.
+
+## Seed data provenance
+
+`data/` is generated, never hand-edited. `scripts/generate_seed_data.py` builds every record —
+including correction supersession chains with deterministic ids matching
+`CorrectionLedger.record` — and CI fails if committed data drifts from generator output
+(`apk seed --check`).
 
 ## Roadmap (spec section 19)
 
@@ -209,9 +241,10 @@ data is bundled with this repository.
   rules, store successful strategies. *(shipped in `apk.corrections` / `apk.policy`)*
 - **Phase D — Test**: regression corpus from historical failures, replay current policy, detect
   recurrence. *(shipped in `apk.replay`)*
-- **Phase E — Compound**: connect an external canonical ledger (e.g. Supabase), semantic indexes,
-  Files/Library source artifacts, provider state, cross-platform portability. *(future work — the
-  `JsonlStore` interface is the seam a database-backed store would implement)*
+- **Phase E — Compound**: connect an external canonical ledger, semantic indexes,
+  Files/Library source artifacts, provider state, cross-platform portability. *(Supabase
+  write-through shipped in `apk.connectors.supabase` + `supabase/migrations/`; semantic indexes
+  and cross-platform adapters remain future sinks on the connector plane)*
 
 ## License
 
