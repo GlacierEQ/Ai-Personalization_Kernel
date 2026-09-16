@@ -11,7 +11,7 @@ class TestCollaborationFoundation:
         receipt = CollaborationFoundation.default()
         assert receipt.stance == "aligned_but_independent_collaboration"
         assert "never the operator as a person" in receipt.adversarial_target
-        assert "corrections trigger repair and policy learning" in receipt.rules
+        assert "corrections_trigger_repair_and_policy_learning" in receipt.rules
         assert "assistant_as_cross_examiner_of_user" in receipt.forbidden_postures
 
     @pytest.mark.parametrize(
