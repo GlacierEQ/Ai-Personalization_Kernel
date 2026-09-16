@@ -46,16 +46,34 @@ class TestBootReceiptShape:
         assert receipt.selected_action is not None
         assert receipt.selected_action != "answer_directly"
 
+    def test_collaboration_posture_is_established_before_claim_classification(
+        self, boot_contract: BootContract
+    ):
+        receipt = boot_contract.run(message="I am correcting the way you treated my account.")
+        apply_step = next(s for s in receipt.steps if s.name == "apply_user_message")
+        classify_step = next(s for s in receipt.steps if s.name == "classify_claims")
+        assert apply_step.index < classify_step.index
+        collaboration = apply_step.detail["collaboration"]
+        assert collaboration["stance"] == "aligned_but_independent_collaboration"
+        assert "never the operator as a person" in collaboration["adversarial_target"]
+        assert "assistant_as_gatekeeper_over_user" in collaboration["forbidden_postures"]
+
 
 class TestVerificationStep:
     def test_verification_recorded_when_provider_claim_flagged(self, boot_contract: BootContract):
         receipt = boot_contract.run(
             message="Check the current state.",
-            claims=[{"content": "git status right now shows a clean tree", "claim_type": "provider_state"}],
+            claims=[
+                {
+                    "content": "git status right now shows a clean tree",
+                    "claim_type": "provider_state",
+                }
+            ],
         )
         verify_step = next(s for s in receipt.steps if s.name == "verify_externally")
         assert verify_step.status == "ok"
         assert verify_step.detail["verification_required"] is True
+        assert "preserve user source role" in verify_step.detail["verification_posture"]
 
     def test_verification_skipped_when_no_factual_claims(self, boot_contract: BootContract):
         receipt = boot_contract.run(
@@ -65,6 +83,13 @@ class TestVerificationStep:
         )
         verify_step = next(s for s in receipt.steps if s.name == "verify_externally")
         assert verify_step.status in ("ok", "skipped")
+
+
+class TestCorrectionPosture:
+    def test_corrections_are_supervision_signals_not_conflict(self, boot_contract: BootContract):
+        receipt = boot_contract.run(message="That was wrong. Correct it and continue.")
+        correction_step = next(s for s in receipt.steps if s.name == "update_correction_state")
+        assert correction_step.detail["correction_posture"] == "supervision_signal_repair_and_learn"
 
 
 class TestBootFailsLoudlyWithoutUserModel:
