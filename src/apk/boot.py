@@ -1,9 +1,14 @@
 """Boot contract: the 12-step operating sequence (spec section 15).
 
 This is not a permission gate; it is the operating path executed on every
-substantial turn. It orchestrates the user model, authority resolver,
-retrieval router, policy engine, and supersession resolver into one ordered,
-auditable receipt.
+substantial turn. It orchestrates the user model, cooperative collaboration
+foundation, authority resolver, retrieval router, policy engine, and
+supersession resolver into one ordered, auditable receipt.
+
+The collaboration foundation is deliberately established before claim
+classification. This prevents evidence discipline from degenerating into an
+examiner-vs-user posture: verification tests propositions and system state,
+not the operator as a person.
 """
 
 from __future__ import annotations
@@ -14,6 +19,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from apk.authority import AuthorityResolver, Claim
+from apk.collaboration import CollaborationFoundation
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.router import RetrievalRouter, TurnContext
@@ -106,18 +112,40 @@ class BootContract:
             raise BootContractError(f"boot contract aborted at step 1: {exc}") from exc
         steps.append(StepResult(1, STEP_NAMES[0], "ok", {"identity": user_model.identity}))
 
-        # Step 2: APPLY current user message as highest user-level direction.
-        steps.append(StepResult(2, STEP_NAMES[1], "ok", {"message": message}))
+        # Step 2: APPLY current user message as highest user-level direction and
+        # establish the account-wide collaboration posture BEFORE evidence or
+        # authority classification.  The assistant is an aligned-but-independent
+        # collaborator, never the operator's examiner or factual sovereign.
+        collaboration = CollaborationFoundation.default()
+        steps.append(
+            StepResult(
+                2,
+                STEP_NAMES[1],
+                "ok",
+                {
+                    "message": message,
+                    "collaboration": collaboration.to_dict(),
+                },
+            )
+        )
 
-        # Step 3: CLASSIFY claim/authority types.
+        # Step 3: CLASSIFY claim/authority types. Classification identifies
+        # provenance/competence; it must not convert source classes into a
+        # hierarchy of human credibility.
         classified = []
         for c in claims:
-            claim = Claim(content=c.get("content", ""), claim_type=c.get("claim_type"), source=c.get("source", "turn"))
+            claim = Claim(
+                content=c.get("content", ""),
+                claim_type=c.get("claim_type"),
+                source=c.get("source", "turn"),
+            )
             classified.append(
                 {
                     "content": claim.content,
                     "claim_type": claim.resolved_type(),
-                    "controlling_authority": AuthorityResolver.controlling_authority(claim.resolved_type()),
+                    "controlling_authority": AuthorityResolver.controlling_authority(
+                        claim.resolved_type()
+                    ),
                 }
             )
         steps.append(StepResult(3, STEP_NAMES[2], "ok", {"claims": classified}))
@@ -134,7 +162,8 @@ class BootContract:
             )
         )
 
-        # Step 5: RETRIEVE deeper context where resolution is needed.
+        # Step 5: RETRIEVE deeper context where resolution is needed. Missing
+        # context creates retrieval work, not suspicion of the user.
         router = RetrievalRouter(user_model)
         turn_ctx = TurnContext(message=message, triggers=frozenset(triggers))
         receipt = router.assemble(turn_ctx)
@@ -143,7 +172,10 @@ class BootContract:
                 5,
                 STEP_NAMES[4],
                 "ok",
-                {"tiers_activated": list(receipt.tiers_activated), "triggers_fired": list(receipt.triggers_fired)},
+                {
+                    "tiers_activated": list(receipt.tiers_activated),
+                    "triggers_fired": list(receipt.triggers_fired),
+                },
             )
         )
 
@@ -170,8 +202,11 @@ class BootContract:
                 7,
                 STEP_NAMES[6],
                 "ok",
-                {"selected_action": selected.name, "final_score": selected.final_score,
-                 "ranked": [a.name for a in decision.ranked[:5]]},
+                {
+                    "selected_action": selected.name,
+                    "final_score": selected.final_score,
+                    "ranked": [a.name for a in decision.ranked[:5]],
+                },
             )
         )
 
@@ -179,6 +214,8 @@ class BootContract:
         steps.append(StepResult(8, STEP_NAMES[7], "ok", {"executed_action": selected.name}))
 
         # Step 9: VERIFY externally when factual/action claims require it.
+        # Verification is additive and proposition-scoped; it never turns into
+        # a generalized credibility test of the operator.
         needs_verification = any(
             c["claim_type"] in ("provider_state", "public_fact") for c in classified
         ) or selected.name in ("execute_reversible_action", "inspect_provider_state", "verify_action")
@@ -187,15 +224,43 @@ class BootContract:
                 9,
                 STEP_NAMES[8],
                 "ok" if needs_verification else "skipped",
-                {"verification_required": needs_verification},
+                {
+                    "verification_required": needs_verification,
+                    "verification_posture": (
+                        "test proposition/provider state; preserve user source role; "
+                        "localize uncertainty"
+                    ),
+                },
             )
         )
 
-        # Step 10: UPDATE correction/success/failure state.
-        steps.append(StepResult(10, STEP_NAMES[9], "ok", {"corrections_considered": len(active_corrections)}))
+        # Step 10: UPDATE correction/success/failure state. Corrections are
+        # supervision signals: repair failed assumptions and improve policy;
+        # do not defend the prior answer or treat the user as an opponent.
+        steps.append(
+            StepResult(
+                10,
+                STEP_NAMES[9],
+                "ok",
+                {
+                    "corrections_considered": len(active_corrections),
+                    "correction_posture": "supervision_signal_repair_and_learn",
+                },
+            )
+        )
 
         # Step 11: PRESERVE provenance and continue.
-        steps.append(StepResult(11, STEP_NAMES[10], "ok", {"provenance_preserved": True}))
+        steps.append(
+            StepResult(
+                11,
+                STEP_NAMES[10],
+                "ok",
+                {
+                    "provenance_preserved": True,
+                    "relationship_preserved": "aligned_but_independent_collaboration",
+                },
+            )
+        )
 
         # Step 12: ANSWER last (always the final step).
         steps.append(StepResult(12, STEP_NAMES[11], "ok", {"answer_after_steps": len(steps)}))
