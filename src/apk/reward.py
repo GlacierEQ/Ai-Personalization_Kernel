@@ -1,31 +1,48 @@
-"""Reward / feedback model (spec section 10).
+"""Feedback / alignment model (spec section 10).
 
-Every turn can create policy evidence. Negative events scale by a
-recurrence multiplier so that repeated failure becomes increasingly
-unlikely; positive events scale only by evaluator confidence.
+Every turn can create policy evidence.  Positive events reinforce successful
+collaboration.  Negative values are *misalignment costs applied to assistant
+behavior*, never penalties applied to the user and never signals that the user
+is an adversary.
+
+Repeated failure scales because a recurring assistant defect should become
+increasingly difficult for the action policy to select again.  Corrections are
+high-value supervision signals: the correct response is repair, learning, and
+continuation -- not defensiveness or credibility testing.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 EVENT_SCORES: dict[str, float] = {
+    # Positive collaboration / execution signals.
     "explicit_user_approval": 5.0,
+    "user_correction_integrated": 5.0,
     "verified_objective_achieved": 4.0,
+    "recovered_and_repaired_after_correction": 4.0,
     "reused_known_successful_strategy": 3.0,
+    "localized_disagreement_without_credibility_judgment": 3.0,
     "preserved_valid_prior_state": 2.0,
     "provider_readback_verified": 2.0,
     "no_unnecessary_user_intervention": 1.0,
+    # Assistant-behavior misalignment costs. These never score the user.
     "unnecessary_clarification": -2.0,
     "ignored_known_preference": -3.0,
     "repeated_corrected_behavior": -5.0,
+    "burden_shifted_to_user_for_retrievable_context": -6.0,
     "displaced_explicit_user_direction": -6.0,
+    "globalized_uncertainty_into_user_credibility": -8.0,
+    "defensive_self_justification_after_correction": -8.0,
     "contradicted_verified_state": -8.0,
+    "adversarial_posture_toward_user": -10.0,
     "repeated_critical_failure_after_strong_correction": -10.0,
 }
 
-# Reward-model scope weights (spec section 10, as specified for this module).
+# Feedback-model scope weights. Global assistant defects carry more repair
+# urgency than conversation-local defects. The weights describe policy scope,
+# not importance or credibility of a person.
 SCOPE_WEIGHTS: dict[str, float] = {
     "global": 1.0,
     "project": 0.8,
@@ -83,6 +100,13 @@ class RewardReport:
 
 
 class RewardModel:
+    """Compatibility name for the account's feedback/alignment scorer.
+
+    The public class name is retained to avoid breaking callers. Semantically,
+    it scores assistant outcomes for alignment with the shared objective; it
+    does not reward or punish the user.
+    """
+
     def __init__(
         self,
         event_scores: dict[str, float] | None = None,
@@ -97,12 +121,17 @@ class RewardModel:
         base = self.event_scores[event.type]
         scope_weight = self.scope_weights.get(event.scope, 1.0)
         if base < 0:
+            # Recurrence increases suppression of the assistant failure mode.
+            # It does not increase skepticism toward the user.
             recurrence_multiplier = 2 ** max(event.recurrence_count - 1, 0)
             return base * recurrence_multiplier * event.confidence * scope_weight
         return base * event.confidence
 
     def apply(self, events: list[OutcomeEvent | dict[str, Any]]) -> RewardReport:
-        normalized = [e if isinstance(e, OutcomeEvent) else OutcomeEvent.from_dict(e) for e in events]
+        normalized = [
+            e if isinstance(e, OutcomeEvent) else OutcomeEvent.from_dict(e)
+            for e in events
+        ]
         scored = [ScoredEvent(event=e, score=self.score_event(e)) for e in normalized]
         total = sum(s.score for s in scored)
         return RewardReport(total=total, breakdown=scored)
