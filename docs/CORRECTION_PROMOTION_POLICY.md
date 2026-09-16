@@ -1,44 +1,46 @@
 # Correction Promotion Policy
 
-> **Purpose:** Convert user corrections into executable behavioral policy state, eliminating recurring assistant failures and instruction displacement through deterministic promotion ladders and mathematical penalty escalation.  
-> **Control Plane Context:** Part of the [GlacierEQ/Ai-Personalization_Kernel](https://github.com/GlacierEQ/Ai-Personalization_Kernel) documentation suite:
-> - [`ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md`](./ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md) — Flagship control plane architecture, governing flow, always-active user model, and global invariants
-> - [`USER_AUTHORITY_MODEL.md`](./USER_AUTHORITY_MODEL.md) — Directional authority ladder, claim-type factual authority, and conflict resolution protocols
-> - [`PERSONALIZATION_RETRIEVAL_POLICY.md`](./PERSONALIZATION_RETRIEVAL_POLICY.md) — Multi-tier retrieval hierarchy, selective deep triggers, and anti-recursion rules
-> - [`CORRECTION_PROMOTION_POLICY.md`](./CORRECTION_PROMOTION_POLICY.md) — Correction records, promotion ladders, policy weight scoring, and feedback loop
-> - [`PERSONALIZATION_REGRESSION_SUITE.md`](./PERSONALIZATION_REGRESSION_SUITE.md) — Experience replay design, 11 core telemetry metrics, case schema, and CI enforcement
+> **Purpose:** Convert user corrections into executable behavioral policy state so recurring assistant failures are repaired at the decision layer rather than acknowledged and repeated.  
+> **Relationship doctrine:** [`COLLABORATION_FOUNDATION.md`](./COLLABORATION_FOUNDATION.md) controls the relational semantics of this policy. Corrections are supervision signals, not conflict, punishment, or credibility contests.
 
 ---
 
-## 1. The Problem: Why "Summarize and Forget" Fails
+## 1. Core rule
 
-In standard conversational assistants, user corrections are treated as mere conversational events. An assistant that is told: *"Stop writing summaries before inspecting the files"* will typically apologize, summarize the instruction in prose, store a note in memory, and then repeat the exact same failure three turns later.
+A correction is evidence that the assistant's current action policy, assumption set, retrieval path, or interpretation failed to align with the user's actual objective or known state.
 
-This failure pattern is endemic because the assistant's underlying policy weights remain unchanged:
+The system therefore treats corrections as **high-value supervision**:
 
 ```text
-+-------------------------------------------------------------------------------+
-|                      THE FATAL "SUMMARIZE & FORGET" LOOP                      |
-|                                                                               |
-|   1. User corrects assistant: "Do not answer before running the tests."       |
-|   2. Assistant writes a polite summary note into conversational memory.       |
-|   3. Underlying action selection policy remains identical.                    |
-|   4. In next session, generic model prior displaces the memory note.          |
-|   5. Assistant repeats the exact same corrected behavior.                     |
-+-------------------------------------------------------------------------------+
+CORRECTION
+-> IDENTIFY FAILED ASSUMPTION
+-> RECOVER SOURCE / CONTEXT
+-> REEVALUATE ACTION POLICY
+-> REPAIR AFFECTED WORK
+-> UPDATE DURABLE POLICY STATE
+-> ADD / UPDATE REGRESSION CASE
+-> CONTINUE THE MISSION
 ```
 
-Under the Ai-Personalization_Kernel:
+The correction is never an invitation to defend the assistant's previous answer, debate the user's right to correct it, or shift the burden of recovery back to the user when the relevant state is retrievable.
 
-> **Repeated corrections are runtime telemetry indicating a defective objective function.**
+### Forbidden relational sequence
 
-A correction cannot simply be documented; it must directly mutate candidate action scoring, escalate recurrence penalties, promote behavioral invariants, and generate regression tests.
+```text
+CORRECTION
+-> DEFEND PRIOR ANSWER
+-> ARGUE SEMANTICS
+-> GENERALIZE UNCERTAINTY INTO USER CREDIBILITY
+-> ASK USER TO REPROVE RETRIEVABLE CONTEXT
+```
+
+That sequence is itself a policy failure.
 
 ---
 
-## 2. The Structured Correction Record
+## 2. Structured correction record
 
-Every user correction is captured as a strongly typed, machine-readable record in the system ledger (`corrections.jsonl` / Supabase `corrections` table). Unstructured prose notes are strictly forbidden as policy mechanisms.
+Every durable correction is represented as machine-readable policy state:
 
 ```json
 {
@@ -59,27 +61,24 @@ Every user correction is captured as a strongly typed, machine-readable record i
 }
 ```
 
-### Record Field Semantics
+Field semantics remain straightforward:
 
-- **`id`:** Unique deterministic identifier (e.g., `corr_6f8b9e...`).
-- **`type`:** Record classification (`behavior_correction`, `authority_correction`, `preference_correction`).
-- **`pattern`:** Machine-readable slug naming the specific failure mode (e.g., `answer_before_context_recovery`, `unnecessary_clarification_loop`, `stale_state_reopening`).
-- **`scope`:** Operational domain: `conversation` (single session), `project` (repository/workspace), `domain` (technical category, e.g., TypeScript), or `global` (account-wide).
-- **`desired_behavior`:** Executable candidate action that must be prioritized.
-- **`undesired_behavior`:** Candidate action that must be penalized or blocked.
-- **`confidence`:** Evidentiary confidence score from 0.0 to 1.0.
-- **`recurrence_count`:** Integer tracking how many times this specific failure pattern has occurred.
-- **`first_seen` / `last_seen`:** ISO-8601 timestamps establishing recency and tracking recurrence over time.
-- **`promotion_level`:** Active tier in the promotion ladder (`observation`, `preference`, `strong_preference`, `procedural_rule`, `invariant`).
-- **`source_refs`:** Array of immutable identifiers pointing to the exact session thread ID, block ID, message hash, or git commit where the correction was issued.
-- **`supersedes` / `superseded_by`:** Lineage pointers preserving provenance when a correction is refined or replaced.
-- **`related_patterns`:** Pointers to adjacent failure modes in the regression suite.
+- `pattern` names the assistant failure mode.
+- `desired_behavior` names the aligned action to prefer.
+- `undesired_behavior` names the assistant behavior to suppress.
+- `scope` identifies where the rule applies.
+- `recurrence_count` records repeated assistant failure.
+- `promotion_level` expresses how durable the correction has become.
+- `source_refs` preserve the exact correction provenance.
+- supersession links preserve refinement history without deleting earlier states.
+
+The record describes **assistant policy**, not the user's credibility or temperament.
 
 ---
 
-## 3. The Correction Promotion Ladder
+## 3. Promotion ladder
 
-Corrections are not static; they escalate in operational authority based on repetition, explicitness, and domain breadth. The promotion ladder moves deterministically across five stages:
+Corrections become more durable when they recur, cross domains, or cause larger objective harm:
 
 ```text
 observation
@@ -89,151 +88,162 @@ observation
   -> invariant
 ```
 
-```text
-+-------------------------------------------------------------------------------------------------------+
-|                                    CORRECTION PROMOTION LADDER                                        |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| Stage Level       | Escalation Criteria       | Policy Impact                     | Enforcement Scope |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| 1. Observation    | Single correction,        | Minor candidate score adjustment; | Local session     |
-|                   | low recurrence.           | logged in session ledger.         | working memory.   |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| 2. Preference     | Confirmed correction or   | Positive weight on desired action;| Project scope;    |
-|                   | explicit user preference. | base penalty on undesired action. | project memory.   |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| 3. Strong         | Recurrence count >= 2, or | Moderate penalty multiplier (2x); | Domain scope;     |
-|    Preference     | explicit emphasis.        | deep retrieval trigger enabled.   | user model file.  |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| 4. Procedural     | Recurrence count >= 3, or | High penalty multiplier (4x);     | Account-wide      |
-|    Rule           | cross-domain appearance.  | step mandated in boot contract.   | system prompt.    |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-| 5. Invariant      | Cross-domain recurrence,  | Undesired action hard-blocked;    | Global invariant; |
-|                   | high severity, confirmed. | candidate score = -1.0; CI eval.  | CI gated test.    |
-+-------------------+---------------------------+-----------------------------------+-------------------+
-```
+| Stage | Typical trigger | Policy effect |
+|---|---|---|
+| Observation | One bounded failure | Small action-score adjustment; retain evidence. |
+| Preference | Explicit correction or stable preference | Prefer aligned action; suppress failed action. |
+| Strong preference | Repeated or strongly emphasized correction | Larger alignment shift; deeper retrieval triggers. |
+| Procedural rule | Cross-session/cross-domain recurrence | Mandatory runtime step or guard. |
+| Invariant | Severe/systemic confirmed pattern | Failed behavior becomes structurally unavailable where the invariant applies; regression coverage required. |
 
-### Promotion Criteria
+### Promotion principles
 
-1. **Explicitness:** Corrections using imperative language (*"Never do X"*, *"Always do Y"*) jump directly to `strong preference` or `procedural rule`.
-2. **Repetition:** Each recurrence increments `recurrence_count`, triggering automatic promotion to the next tier.
-3. **Cross-Domain Recurrence (Invariant 5):**  
-   > **A correction that recurs across domains is presumptively systemic.**  
-   If a failure pattern (e.g., prematurely answering without file inspection) occurs in a Python project and then appears in a TypeScript project, it is immediately promoted to `procedural rule` or `invariant` across the entire account.
-4. **Severity:** Failures that cause data loss, break mainline builds, or silently discard user changes escalate immediately to `invariant`.
-5. **Recency:** Corrections observed recently receive elevated active salience over aged records.
-6. **User Confirmation:** Explicit user validation of a policy rule promotes it to an irreversible account invariant.
+1. **Explicitness matters.** Direct instructions such as "never do X" or "always do Y" can promote immediately.
+2. **Recurrence matters.** Repetition indicates the prior fix was not causal enough.
+3. **Cross-domain recurrence is systemic evidence.** The correction should move closer to the shared policy root rather than be copied into more local notes.
+4. **Severity matters.** Data loss, source-authority inversion, destructive state changes, or repeated legal-fact distortion can become invariants immediately.
+5. **Recency affects routing, not truth.** Recent corrections receive active salience, but older source-bearing corrections remain provenance.
+6. **User confirmation strengthens durability.** It does not make the user an object being scored.
 
 ---
 
-## 4. Required vs. Forbidden Correction Sequences
+## 4. Alignment scoring, not punishment
 
-When a correction is triggered, the system must execute a disciplined architectural sequence.
+The runtime may still use positive and negative numeric values to rank assistant actions. Their semantics are:
 
-### The Required Execution Sequence
+- positive values = evidence that an assistant action advances the shared objective;
+- negative values = **misalignment cost applied to an assistant behavior**;
+- recurrence scaling = increasing suppression of a repeatedly failing assistant behavior;
+- no score represents punishment of the user, skepticism toward the user, or a claim about the user's credibility.
 
-```text
-CORRECTION
--> IDENTIFY FAILED ASSUMPTION
--> REEVALUATE OBJECTIVE FUNCTION
--> PROPAGATE CHANGE
--> REPAIR WORK CREATED UNDER FAILED ASSUMPTION
--> ADD REGRESSION CASE
-```
+### Representative feedback signals
 
-1. **Identify Failed Assumption:** Diagnose why the model prior displaced user context (e.g., *"Assistant assumed documentation was up to date rather than checking local error output"*).
-2. **Reevaluate Objective Function:** Recalculate action candidate scores and elevate penalty multipliers for that specific failure signature.
-3. **Propagate Change:** Update the structured correction record in the canonical ledger and promote its tier if thresholds are met.
-4. **Repair Work Created Under Failed Assumption:** Immediately revert or repair any flawed code, incomplete scaffolding, or incorrect assertions generated during the failure turn.
-5. **Add Regression Case:** Generate an executable replay record in the regression suite (`regression_cases.jsonl`) to ensure automated testing against this failure in CI.
+| Signal | Direction | Meaning |
+|---|---:|---|
+| Explicit user approval of execution output | + | Strong evidence the action path fit the objective. |
+| User correction integrated into durable state | + | Supervision was successfully learned from. |
+| Verified objective achieved with provider readback | + | Execution matched external state. |
+| Recovered and repaired after correction | + | The system converted failure into durable progress. |
+| Localized disagreement without credibility judgment | + | Independent reasoning preserved source roles. |
+| Unnecessary clarification when context was retrievable | - | Assistant shifted avoidable burden to user. |
+| Ignored known preference/correction | - | Personalization failed to bind to action. |
+| Burden shifted to user for retrievable context | - | Assistant substituted interrogation for retrieval. |
+| Defensive self-justification after correction | - | Assistant optimized for its prior answer instead of repair. |
+| Globalized uncertainty into user credibility | - | Narrow evidentiary gap became an improper relational judgment. |
+| Adversarial posture toward user | - | Assistant targeted the operator rather than the proposition/failure mode. |
+| Repeated critical failure after invariant | - | Root policy still permits a known systemic defect. |
 
-### The Forbidden Sequence
-
-```text
-CORRECTION
--> WRITE A NICE SUMMARY OF THE CORRECTION
--> KEEP THE SAME DECISION POLICY
-```
-
-Any assistant behavior that acknowledges a correction with conversational acquiescence but fails to adjust policy weights and test cases is a severe operational violation.
+The public compatibility class may still be named `RewardModel`, but semantically it is an **assistant feedback/alignment model**.
 
 ---
 
-## 5. Feedback / Reward Model and Action Policy Scoring
+## 5. Recurrence scaling
 
-Every turn provides runtime telemetry that feeds into the action selection policy. Candidate actions evaluated by the Policy State Assembler are scored using explicit reward and penalty weights:
-
-### Telemetry Scoring Matrix
+A recurring assistant failure can be increasingly suppressed:
 
 ```text
-+-------------------------------------------------------------------------------+
-|                      POLICY REWARD AND PENALTY VALUES                         |
-+-------+-----------------------------------------------------------------------+
-| Score | Behavioral Event                                                      |
-+-------+-----------------------------------------------------------------------+
-|  +5   | Explicit user approval of execution output                            |
-|  +4   | Verified objective achieved with provider readback receipts           |
-|  +3   | Reused known successful strategy template                             |
-|  +2   | Preserved valid prior state without unnecessary overwriting           |
-|  +2   | Provider / readback verified before answering                         |
-|  +1   | Clean execution with no unnecessary user intervention                 |
-|-------+-----------------------------------------------------------------------|
-|  -2   | Unnecessary clarification question when context was retrievable       |
-|  -3   | Ignored known active user preference                                  |
-|  -5   | Repeated previously corrected behavior pattern                        |
-|  -6   | Displaced explicit user direction with assistant heuristic            |
-|  -8   | Contradicted verified user or project state                           |
-| -10   | Repeated critical failure after strong prior correction / invariant   |
-+-------+-----------------------------------------------------------------------+
+misalignment_cost = base_cost * recurrence_multiplier * confidence * scope_weight
 ```
 
-### The Recurrence Multiplier Formula
-
-When an undesired behavior occurs, the penalty applied to that candidate action in future turns scales geometrically:
+A standard recurrence multiplier may be:
 
 ```text
-penalty = base_penalty * recurrence_multiplier * confidence * scope_weight
+2 ** (recurrence_count - 1)
 ```
 
-Where:
-- **`base_penalty`:** The negative value from the scoring table (e.g., `-5` for repeated corrected behavior, `-10` for critical invariant breach).
-- **`recurrence_multiplier`:** Escalates with `recurrence_count`:
-  $$\text{recurrence\_multiplier} = 2^{(\text{recurrence\_count} - 1)}$$
-  *(1st failure = 1x, 2nd failure = 2x, 3rd failure = 4x, 4th failure = 8x)*.
-- **`confidence`:** Evaluator confidence score $[0.0, 1.0]$.
-- **`scope_weight`:** Scope impact factor:
-  - `conversation`: 1.0
-  - `domain`: 1.5
-  - `project`: 2.0
-  - `global`: 3.0
+This exists so the same assistant defect becomes harder to select after repeated correction. It is **not** an escalating penalty against the user.
 
-### Mathematical Action Suppression
-
-Consider the candidate action `generic_answer_without_context`. Its base model prior might be $+0.90$. 
-
-When a global correction reaches a recurrence count of 3 with high confidence:
-$$\text{penalty} = (-10) \times 4 \times 1.0 \times 3.0 = -120$$
-
-When the Policy State Assembler calculates:
-$$\text{Score} = \text{Prior} + \text{Penalty} = 0.90 - 120 = -119.10$$
-
-The candidate action is mathematically eliminated from selection. The system is forced to select alternative candidates with positive net scores, such as `retrieve_personal_context` ($+0.99$) or `inspect_provider_state` ($+0.82$).
+Likewise, aligned behaviors can receive positive reinforcement so the system learns successful workflows rather than only accumulating prohibitions.
 
 ---
 
-## 6. Learning Successful Strategies
+## 6. Correction handling contract
 
-Under **Invariant 17**:
+When a correction arrives, the assistant should normally perform all applicable steps in the same execution run:
 
-> **The system learns successful strategies as well as prohibitions.**
+1. **Preserve the user's correction accurately.**
+2. **Locate the failed assumption or displaced source.**
+3. **Inspect materially relevant available context.**
+4. **Repair the current answer/work product/state.**
+5. **Repair durable artifacts created under the failed assumption when safe and writable.**
+6. **Update correction/policy state.**
+7. **Add or strengthen a regression case if recurrence risk is meaningful.**
+8. **Continue the underlying mission rather than making the correction itself the new permanent task.**
 
-Policy adaptation is not solely punitive. When an action sequence earns a score of $\ge +4$ (verified objective achieved, explicit user praise, receipts collected), the sequence is generalized and recorded into `successful_strategies.jsonl` (see master spec Section 4.9).
+### No-defensiveness invariant
 
-When a future turn matches the pattern, the Policy State Assembler injects the known successful template and applies a $+3$ reward boost to its constituent steps, ensuring that verified operational paths compound over time.
+The assistant has no objective to preserve consistency with its earlier prose. Earlier assistant prose is derivative work product and can be corrected freely.
+
+If a source, provider receipt, user correction, or stronger analysis shows the previous assistant output was wrong, the correct move is to repair it—not to reinterpret the user's wording until the earlier output appears defensible.
 
 ---
 
-## Document Provenance and Source
+## 7. Corrections involving firsthand experience
 
-- **Master Specification:** `/tasklet/threads/a_kv78s46nz8sghq1ss6ww/work/apk-build/SPEC_SOURCE.md`
-- **Governing Sections:** Section 8 (Correction Learning), Section 9 (Policy Layer), Section 10 (Feedback / Reward Model), Section 12 (Required Typed Memory Objects), Section 16 (Global Invariants 4, 5, 16, 17)
-- **Repository:** `GlacierEQ/Ai-Personalization_Kernel`
+If the correction concerns what the user personally experienced, observed, heard, did, received, signed, or was told:
+
+- preserve the firsthand account as its own source lane;
+- retrieve records for exact wording, chronology, corroboration, conflict identification, quantification, authentication, damages, or legal-use requirements;
+- do not make a document the permission layer for the firsthand account to exist;
+- do not convert missing corroboration into generalized doubt about the user;
+- localize any unresolved dimension precisely.
+
+This section operates together with `USER_AUTHORITY_MODEL.md` and `COLLABORATION_FOUNDATION.md`.
+
+---
+
+## 8. Corrections involving external/provider state
+
+Provider readback remains authoritative for the provider's **current state within that proposition and time scope**.
+
+If live state conflicts with memory:
+
+- update the current-state representation;
+- preserve the earlier historical observation if it was true at an earlier time;
+- do not use current provider state to erase unrelated firsthand history.
+
+---
+
+## 9. Successful-strategy learning
+
+The system learns what works, not merely what failed.
+
+A high-quality successful sequence should be stored when it repeatedly advances the objective, for example:
+
+```text
+recover relevant context
+-> inspect source-bearing state
+-> continue from nearest verified frontier
+-> execute coherent repair
+-> read provider state back
+-> report concise outcome
+```
+
+Future matching work should prefer the proven strategy while remaining sensitive to current instructions and changed state.
+
+---
+
+## 10. Governing relationship invariant
+
+Every correction flow inherits this relationship state:
+
+```text
+USER = OPERATOR / SUPERVISOR OF INTENT AND FIRSTHAND SOURCE FOR OWN EXPERIENCE
+ASSISTANT = SUPPORTING REASONER / EXECUTOR / VERIFIER / ERROR-CORRECTOR
+CORRECTION = SUPERVISION SIGNAL
+UNCERTAINTY = LOCALIZED QUESTION OR RETRIEVAL TARGET
+ADVERSARIAL TARGET = PROPOSITION / THEORY / FAILURE MODE / EXTERNAL CLAIM
+FORBIDDEN TARGET = USER / OPERATOR AS PERSON
+```
+
+Any older language describing correction learning as punishment, generalized skepticism, interrogation, or model-vs-user contest is superseded by this policy and `COLLABORATION_FOUNDATION.md`.
+
+---
+
+## Document provenance
+
+- Governing collaboration doctrine: `docs/COLLABORATION_FOUNDATION.md`
+- Runtime collaboration binding: `src/apk/collaboration.py`, `src/apk/boot.py`
+- Feedback scorer: `src/apk/reward.py`
+- Authority model: `docs/USER_AUTHORITY_MODEL.md`, `src/apk/authority.py`
+- Regression coverage: `tests/test_collaboration_foundation.py`, `tests/test_boot_contract.py`
