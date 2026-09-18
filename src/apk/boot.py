@@ -22,6 +22,7 @@ from apk.authority import AuthorityResolver, Claim
 from apk.collaboration import CollaborationFoundation
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
+from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
 from apk.router import RetrievalRouter, TurnContext
 from apk.supersession import SupersessionResolver
 from apk.user_model import UserModel, UserModelMissingError
@@ -66,11 +67,13 @@ class BootReceipt:
     steps: list[StepResult]
     selected_action: Optional[str]
     timestamp: str
+    operator_semantics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "timestamp": self.timestamp,
             "selected_action": self.selected_action,
+            "operator_semantics": self.operator_semantics,
             "steps": [s.to_dict() for s in self.steps],
         }
 
@@ -85,11 +88,34 @@ class BootContract:
         corrections_path: str | Path,
         policy: PolicyEngine,
         store=None,
+        operator_semantics_path: str | Path | None = None,
     ) -> None:
         self.user_model_path = Path(user_model_path)
         self.corrections_path = Path(corrections_path)
         self.policy = policy
         self.store = store
+        self.operator_semantics = (
+            SemanticBinding.from_path(operator_semantics_path)
+            if operator_semantics_path is not None
+            else SemanticBinding.default()
+        )
+
+    def audit_output(self, text: str) -> dict[str, Any]:
+        """Detect semantic inversions before an answer/plan is propagated.
+
+        Findings are supervision/repair signals, never permission gates.
+        """
+        findings = detect_ontology_inversions(text)
+        return {
+            "schema": "glaciereq.personalization-semantic-audit.v1",
+            "findings": findings,
+            "finding_count": len(findings),
+            "repair_required": bool(findings),
+            "mission_continues": True,
+            "creates_authority": False,
+            "authority_holder": "OPERATOR",
+            "contract_sha256": self.operator_semantics.contract_sha256,
+        }
 
     def run(
         self,
@@ -104,6 +130,7 @@ class BootContract:
         claims = claims or []
         triggers = triggers or set()
         steps: list[StepResult] = []
+        operator_projection = self.operator_semantics.project()
 
         # Step 1: LOAD compact account user model. Fails loudly if missing.
         try:
@@ -124,6 +151,7 @@ class BootContract:
                 "ok",
                 {
                     "message": message,
+                    "operator_semantics": operator_projection,
                     "collaboration": collaboration.to_dict(),
                 },
             )
@@ -268,4 +296,9 @@ class BootContract:
         assert [s.name for s in steps] == list(STEP_NAMES), "boot contract must execute steps in order"
         assert steps[-1].name == "answer", "answer step must always be last"
 
-        return BootReceipt(steps=steps, selected_action=selected.name, timestamp=now_iso())
+        return BootReceipt(
+            steps=steps,
+            selected_action=selected.name,
+            timestamp=now_iso(),
+            operator_semantics=operator_projection,
+        )
