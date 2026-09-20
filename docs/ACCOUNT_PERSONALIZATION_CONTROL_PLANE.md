@@ -166,7 +166,7 @@ How the user determines what constitutes valid, high-confidence truth:
 - Mandates live provider readback over speculative recall.
 - Prioritizes primary sources and verbatim code over summaries.
 - Strict separation between direct observation and secondary inference.
-- Structural skepticism toward unsupported conversational assertions.
+- Structural skepticism toward unsupported assistant-generated or derivative assertions; user firsthand reporting is preserved as firsthand evidence and is not demoted merely because it arrives conversationally.
 
 ### 4.4 Interaction Preferences
 The operational rhythm of collaboration:
