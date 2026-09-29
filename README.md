@@ -2,7 +2,7 @@
 
 **An executable personalization-to-behavior binding layer.**
 
-> The user model is always active. Deeper retrieval is selective; personalization itself is not optional.
+> The user model and core continuity recovery are always active. Provider-freshness and public-web enrichment remain task-scoped.
 
 [![CI](https://github.com/GlacierEQ/Ai-Personalization_Kernel/actions/workflows/ci.yml/badge.svg)](https://github.com/GlacierEQ/Ai-Personalization_Kernel/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -135,7 +135,7 @@ pytest -q
 | `apk.store` | `JsonlStore` — append-only ledger; atomic writes; provenance-preserving dedup |
 | `apk.user_model` | `UserModel` — mandatory always-active compact model loader |
 | `apk.authority` | `AuthorityResolver` — per-claim-type factual authority + conflict resolution |
-| `apk.router` | `RetrievalRouter` — 9-tier retrieval cascade, trigger-gated deep retrieval, anti-recursion guard |
+| `apk.context_first_router_v2` | `ContextFirstRouter` — every-turn core continuity recovery with truthful attempted/retrieved/unavailable receipts |
 | `apk.policy` | `PolicyEngine` — candidate action scoring; the binding enforcement layer |
 | `apk.corrections` | `CorrectionLedger` / `PromotionEngine` — recurrence detection + 5-stage promotion ladder |
 | `apk.supersession` | `SupersessionResolver` — supersede/resolve/reopen with provenance-preserving invariants |
@@ -172,7 +172,7 @@ or updating a regression case, that is a defect in the contribution, not an acce
 ## The 18 global invariants
 
 1. Personalization is always active.
-2. Deep retrieval is selective; the user model is not.
+2. Core continuity/history retrieval is attempted every turn before action selection; provider-freshness and public-web lanes are additive when required.
 3. The user does not need to prove relevance before context is considered.
 4. Repeated corrections change policy state.
 5. A correction that recurs across domains is presumptively systemic.
