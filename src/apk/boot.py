@@ -23,7 +23,11 @@ from apk.collaboration import CollaborationFoundation
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
-from apk.router import RetrievalRouter, TurnContext
+from apk.context_first_router_v2 import (
+    ContextFirstRouter,
+    ContextRequest,
+    action_selection_may_treat_context_as_retrieved,
+)
 from apk.supersession import SupersessionResolver
 from apk.user_model import UserModel, UserModelMissingError
 
@@ -89,11 +93,13 @@ class BootContract:
         policy: PolicyEngine,
         store=None,
         operator_semantics_path: str | Path | None = None,
+        context_sources: Optional[dict[str, Any]] = None,
     ) -> None:
         self.user_model_path = Path(user_model_path)
         self.corrections_path = Path(corrections_path)
         self.policy = policy
         self.store = store
+        self.context_sources = dict(context_sources or {})
         self.operator_semantics = (
             SemanticBinding.from_path(operator_semantics_path)
             if operator_semantics_path is not None
@@ -190,19 +196,28 @@ class BootContract:
             )
         )
 
-        # Step 5: RETRIEVE deeper context where resolution is needed. Missing
-        # context creates retrieval work, not suspicion of the user.
-        router = RetrievalRouter(user_model)
-        turn_ctx = TurnContext(message=message, triggers=frozenset(triggers))
-        receipt = router.assemble(turn_ctx)
+        # Step 5: RECOVER core context before action selection on every turn.
+        # Live-provider lookup remains task-scoped. Missing adapters are explicit
+        # receipt state and never count as successful retrieval.
+        router = ContextFirstRouter(user_model, sources=self.context_sources)
+        context_request = ContextRequest(
+            message=message,
+            require_live_provider_state="exact_factual_need" in triggers,
+        )
+        receipt = router.recover(context_request)
+        context_was_retrieved = action_selection_may_treat_context_as_retrieved(receipt)
         steps.append(
             StepResult(
                 5,
                 STEP_NAMES[4],
                 "ok",
                 {
-                    "tiers_activated": list(receipt.tiers_activated),
-                    "triggers_fired": list(receipt.triggers_fired),
+                    "requested_tiers": list(receipt.requested_tiers),
+                    "attempted_tiers": list(receipt.attempted_tiers),
+                    "retrieved_tiers": list(receipt.retrieved_tiers),
+                    "empty_tiers": list(receipt.empty_tiers),
+                    "unavailable_tiers": list(receipt.unavailable_tiers),
+                    "context_retrieved": context_was_retrieved,
                 },
             )
         )
@@ -218,7 +233,7 @@ class BootContract:
         # Step 7: SELECT action policy.
         decision_ctx = DecisionContext(
             relevant_context_exists=relevant_context_exists,
-            context_retrieved=context_retrieved or bool(receipt.tiers_activated[1:]),
+            context_retrieved=context_retrieved or context_was_retrieved,
             info_available_in_user_model=info_available_in_user_model,
             active_corrections=[CorrectionLike.from_dict(c.to_dict()) for c in active_corrections],
             scope=scope,
