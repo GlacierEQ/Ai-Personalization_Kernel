@@ -23,21 +23,23 @@ The compact account user model is loaded into memory on turn zero, prior to task
 
 The assistant is barred from running a preliminary heuristic filter to decide *if* the user's identity, epistemic standards, or operating prohibitions apply. They apply unconditionally.
 
-### Axiom 2: Deep Retrieval is Selective; Personalization is Not
-While the base user model is always resident in context, deep historical search across gigabytes of past transcripts, external vector databases, and project archives must be selective. Selective deep retrieval activates deterministically when triggered by specific turn attributes.
+### Axiom 2: Core Context Recovery Is Unconditional
+The base user model is always resident in context and the core continuity lanes are requested on every turn before action selection: current conversation, recent exact messages, project state, historical chats, canonical user-owned artifacts, and external memory indexes.
+
+Provider-freshness lookups and public-web acquisition remain task-scoped because they answer external-state questions rather than continuity questions. A model relevance judgment may add those lanes, but it may not suppress the core continuity pass.
 
 ### Axiom 3: Retrieval Precedes Action Selection
 Under **Invariant 15** (*"Context first, hard work second, answer last"*), retrieval and environment grounding must complete before the system generates prose or executes irreversible mutations.
 
 ---
 
-## 2. Selective Deep Retrieval Triggers
+## 2. Additive Retrieval Triggers
 
-Deep retrieval across historical chats, project ledgers, and external indexes is invoked when the active turn exhibits one or more of the following triggers:
+Core history/project retrieval already runs every turn. The following triggers add targeted emphasis or external-state lanes:
 
 ```text
 +-------------------------------------------------------------------------------+
-|                       SELECTIVE DEEP RETRIEVAL TRIGGERS                       |
+|                           ADDITIVE RETRIEVAL TRIGGERS                         |
 +------------------------------+------------------------------------------------+
 | Trigger                      | Contextual Indicator                           |
 +------------------------------+------------------------------------------------+
@@ -196,7 +198,8 @@ To prevent context saturation while maintaining full personalization binding:
 
 - **Tier 1 (Always-Active Compact Model):** Strictly budget-constrained (target: < 1,500 tokens). Contains compact identity, core epistemic standards, active goals, and critical prohibitions.
 - **Tiers 2–4 (Immediate Working Window):** Kept focused on current topic and active diffs.
-- **Tiers 5–8 (Selective Deep Context):** Injected dynamically only when specific triggers fire. When triggered, retrieval extracts specific structured nodes, not sprawling raw transcripts.
+- **Tiers 2–7 (Core Continuity Context):** Requested every turn before action selection. Retrieval remains bounded through structured nodes, deduplication, and source pointers rather than by skipping the recovery pass.
+- **Tier 8 (Live Provider State):** Added when freshness/external state is required.
 - **Compaction & Deduplication:** When multiple memories address the same entity, the most recent verified state supersedes older entries, preserving source hashes in the ledger without bloating working memory.
 
 ---
