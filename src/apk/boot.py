@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from apk.authority import AuthorityResolver, Claim
+from apk.detail_integrity import SourceCoverage, enforce_detail_integrity
 from apk.collaboration import CollaborationFoundation
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
@@ -132,6 +133,7 @@ class BootContract:
         context_retrieved: bool = False,
         info_available_in_user_model: bool = False,
         scope: str = "conversation",
+        source_coverage: Optional[dict[str, Any]] = None,
     ) -> BootReceipt:
         claims = claims or []
         triggers = triggers or set()
@@ -239,29 +241,41 @@ class BootContract:
             scope=scope,
         )
         decision = self.policy.select(decision_ctx)
-        selected = decision.selected()
+        policy_selected = decision.selected()
+        coverage = SourceCoverage.from_mapping(
+            source_coverage,
+            force_exhaustive="exhaustive_source_review" in triggers,
+        )
+        selected_name, detail_integrity_receipt = enforce_detail_integrity(
+            policy_selected.name,
+            coverage,
+        )
         steps.append(
             StepResult(
                 7,
                 STEP_NAMES[6],
                 "ok",
                 {
-                    "selected_action": selected.name,
-                    "final_score": selected.final_score,
+                    "selected_action": selected_name,
+                    "policy_selected_action": policy_selected.name,
+                    "final_score": policy_selected.final_score,
                     "ranked": [a.name for a in decision.ranked[:5]],
+                    "detail_integrity": detail_integrity_receipt,
                 },
             )
         )
 
-        # Step 8: EXECUTE the strongest coherent available path.
-        steps.append(StepResult(8, STEP_NAMES[7], "ok", {"executed_action": selected.name}))
+        # Step 8: EXECUTE the strongest coherent available path. When an
+        # exhaustive source review is incomplete, source-detail integrity may
+        # redirect premature synthesis to continued source work.
+        steps.append(StepResult(8, STEP_NAMES[7], "ok", {"executed_action": selected_name}))
 
         # Step 9: VERIFY externally when factual/action claims require it.
         # Verification is additive and proposition-scoped; it never turns into
         # a generalized credibility test of the operator.
         needs_verification = any(
             c["claim_type"] in ("provider_state", "public_fact") for c in classified
-        ) or selected.name in ("execute_reversible_action", "inspect_provider_state", "verify_action")
+        ) or selected_name in ("execute_reversible_action", "inspect_provider_state", "verify_action")
         steps.append(
             StepResult(
                 9,
@@ -313,7 +327,7 @@ class BootContract:
 
         return BootReceipt(
             steps=steps,
-            selected_action=selected.name,
+            selected_action=selected_name,
             timestamp=now_iso(),
             operator_semantics=operator_projection,
         )
