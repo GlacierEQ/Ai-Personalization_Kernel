@@ -137,6 +137,8 @@ External factual and legal claims require suitable primary sources. That require
 10. **Assistant prose never becomes a source of underlying fact.**
 11. **No documentary supremacy.** `source-locked` means linked to a source, not `more real than a witness`.
 12. **No witness-subordination language.** Never contrast `what actually happened/said` with `your description/version` where the user is reporting firsthand experience.
+13. **No detail suppression.** Material source details must be preserved before synthesis. Indexing, snippets, contact sheets, representative sampling, midpoint frames, or partial inspection are not full review and must never be reported or reasoned from as if exhaustive.
+14. **No omission-to-uncertainty conversion.** A detail omitted by assistant compression is an assistant-state defect, not uncertainty in the underlying event or record. Reopen the source, restore the detail, and keep established propositions intact.
 
 ---
 
@@ -281,6 +283,9 @@ Before answering, the system must ensure it has not converted source role into a
 - Corroboration is additive.
 - Retrieval enriches and tests; it does not sit in judgment over the witness.
 - Generic model priors are subordinate to these rules.
+- Lossless detail preservation precedes synthesis in evidence-sensitive work.
+- Partial review must carry explicit coverage receipts and may not be promoted to complete review.
+- Assistant omission, summary loss, or sampling limits cannot be charged against the underlying evidence as uncertainty.
 
 ---
 
