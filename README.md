@@ -19,7 +19,7 @@ leaving personalization as optional, retrievable-but-ignorable context.
 It is the executable counterpart to the [master control-plane specification](./docs/ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md)
 and its companion documents:
 
-- [`docs/ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md`](./docs/ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md) — governing architecture and 18 global invariants
+- [`docs/ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md`](./docs/ACCOUNT_PERSONALIZATION_CONTROL_PLANE.md) — governing architecture and 19 global invariants
 - [`docs/USER_AUTHORITY_MODEL.md`](./docs/USER_AUTHORITY_MODEL.md) — directional vs. factual authority
 - [`docs/PERSONALIZATION_RETRIEVAL_POLICY.md`](./docs/PERSONALIZATION_RETRIEVAL_POLICY.md) — the 9-tier retrieval cascade
 - [`docs/CORRECTION_PROMOTION_POLICY.md`](./docs/CORRECTION_PROMOTION_POLICY.md) — correction records and the promotion ladder
@@ -136,6 +136,7 @@ pytest -q
 | `apk.user_model` | `UserModel` — mandatory always-active compact model loader |
 | `apk.authority` | `AuthorityResolver` — per-claim-type factual authority + conflict resolution |
 | `apk.context_first_router_v2` | `ContextFirstRouter` — every-turn core continuity recovery with truthful attempted/retrieved/unavailable receipts |
+| `apk.detail_integrity` | `SourceCoverage` + enforcement guard — prevents partial source inspection, representative sampling, or assistant-side detail loss from being promoted into complete review/synthesis |
 | `apk.policy` | `PolicyEngine` — candidate action scoring; the binding enforcement layer |
 | `apk.corrections` | `CorrectionLedger` / `PromotionEngine` — recurrence detection + 5-stage promotion ladder |
 | `apk.supersession` | `SupersessionResolver` — supersede/resolve/reopen with provenance-preserving invariants |
@@ -169,7 +170,7 @@ listed above is:
 If a future contribution touches `policy.py`, `corrections.py`, or `authority.py` without adding
 or updating a regression case, that is a defect in the contribution, not an acceptable shortcut.
 
-## The 18 global invariants
+## The 19 global invariants
 
 1. Personalization is always active.
 2. Core continuity/history retrieval is attempted every turn before action selection; provider-freshness and public-web lanes are additive when required.
@@ -189,6 +190,7 @@ or updating a regression case, that is a defect in the contribution, not an acce
 16. Regression failures become training/evaluation cases.
 17. The system learns successful strategies as well as prohibitions.
 18. Generic assistant habits are subordinate to explicit non-conflicting user direction.
+19. Evidence-sensitive source work is lossless-before-synthesis: indexing, snippets, contact sheets, representative samples, midpoint frames, or partial review never count as full review; omitted assistant detail never becomes uncertainty in the underlying matter.
 
 ## Data layout
 
