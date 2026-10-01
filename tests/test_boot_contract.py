@@ -115,3 +115,46 @@ class TestBootFailsLoudlyWithoutUserModel:
             pytest.fail("expected BootContractError")
         except BootContractError as exc:
             assert isinstance(exc.__cause__, UserModelMissingError)
+
+
+class TestDetailIntegrityBinding:
+    def test_exhaustive_source_review_redirects_premature_artifact_or_answer(self, boot_contract: BootContract):
+        receipt = boot_contract.run(
+            message="Review the complete evidence set before synthesizing.",
+            triggers={"exhaustive_source_review"},
+            source_coverage={
+                "source_set_declared": True,
+                "total_items": 283,
+                "indexed_items": 283,
+                "partially_reviewed_items": 20,
+                "fully_reviewed_items": 20,
+                "material_detail_extraction_complete": False,
+                "representative_sampling_only": True,
+            },
+        )
+        select_step = next(s for s in receipt.steps if s.name == "select_action_policy")
+        detail = select_step.detail["detail_integrity"]
+        assert detail["complete"] is False
+        assert "representative_sampling_is_not_full_review" in detail["incomplete_reasons"]
+        assert receipt.selected_action != "answer_directly"
+        assert receipt.selected_action != "create_artifact"
+
+    def test_exhaustive_source_review_can_complete_when_every_item_and_detail_is_reviewed(
+        self, boot_contract: BootContract
+    ):
+        receipt = boot_contract.run(
+            message="Synthesize after the complete source pass.",
+            triggers={"exhaustive_source_review"},
+            source_coverage={
+                "source_set_declared": True,
+                "total_items": 10,
+                "indexed_items": 10,
+                "fully_reviewed_items": 10,
+                "material_detail_extraction_complete": True,
+                "representative_sampling_only": False,
+            },
+        )
+        select_step = next(s for s in receipt.steps if s.name == "select_action_policy")
+        detail = select_step.detail["detail_integrity"]
+        assert detail["complete"] is True
+        assert detail["override_applied"] is False
