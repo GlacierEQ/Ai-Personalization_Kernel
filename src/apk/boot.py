@@ -19,8 +19,12 @@ from pathlib import Path
 from typing import Any, Optional
 
 from apk.authority import AuthorityResolver, Claim
-from apk.detail_integrity import SourceCoverage, enforce_detail_integrity
+from apk.detail_integrity import (
+    SourceCoverage, enforce_detail_integrity,
+    EvidenceContinuity, enforce_evidence_continuity,
+)
 from apk.collaboration import CollaborationFoundation
+from apk.case_ratchet import collect_case_sources, enforce_case_ratchet
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
@@ -134,6 +138,9 @@ class BootContract:
         info_available_in_user_model: bool = False,
         scope: str = "conversation",
         source_coverage: Optional[dict[str, Any]] = None,
+        evidence_continuity: Optional[dict[str, Any]] = None,
+        case_id: Optional[str] = None,
+        retained_case_record_ids: Optional[list[str]] = None,
     ) -> BootReceipt:
         claims = claims or []
         triggers = triggers or set()
@@ -250,6 +257,19 @@ class BootContract:
             policy_selected.name,
             coverage,
         )
+        # Do not let a missing order/status dimension erase already supported
+        # evidence or turn a local unknown into a global mission veto.
+        selected_name, evidence_continuity_receipt = enforce_evidence_continuity(
+            selected_name,
+            EvidenceContinuity.from_mapping(evidence_continuity),
+        )
+        # Recover case-scoped historical sources from the independent ledger.
+        # An empty caller projection is not evidence that the case had no
+        # earlier filings, firsthand observations, or provider receipts.
+        selected_name, case_source_ratchet_receipt = enforce_case_ratchet(
+            selected_name,
+            collect_case_sources(self.store, case_id, retained_case_record_ids),
+        )
         steps.append(
             StepResult(
                 7,
@@ -261,6 +281,8 @@ class BootContract:
                     "final_score": policy_selected.final_score,
                     "ranked": [a.name for a in decision.ranked[:5]],
                     "detail_integrity": detail_integrity_receipt,
+                    "evidence_continuity": evidence_continuity_receipt,
+                    "case_source_ratchet": case_source_ratchet_receipt,
                 },
             )
         )
