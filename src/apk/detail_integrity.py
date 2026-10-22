@@ -116,3 +116,96 @@ def enforce_detail_integrity(action: str, coverage: SourceCoverage) -> tuple[str
     receipt["enforced_action"] = CONTINUATION_ACTION
     receipt["override_applied"] = True
     return CONTINUATION_ACTION, receipt
+
+
+@dataclass(frozen=True)
+class EvidenceContinuity:
+    """Structured cumulative evidence coverage independent of legal sufficiency.
+
+    established_propositions are already supported *within their stated scope*.
+    affirmatively_carried are the established IDs retained in the proposed
+    synthesis. A missing order or actor link remains an open dimension rather
+    than silently cancelling every earlier filing, notice or admission.
+
+    The caller supplies source-grounded proposition IDs, not generated claims.
+    This guard cannot confer admissibility, authenticate sources or invent
+    legal liability.
+    """
+
+    established_propositions: tuple[str, ...] = ()
+    affirmatively_carried: tuple[str, ...] = ()
+    open_dimensions: tuple[str, ...] = ()
+    next_executable_transition: str = ""
+    global_stop_inferred: bool = False
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any] | None) -> "EvidenceContinuity":
+        data = dict(value or {})
+        fields = ("established_propositions", "affirmatively_carried", "open_dimensions")
+        for key in fields:
+            data[key] = tuple(dict.fromkeys(data.get(key) or ()))
+            if any(not isinstance(x, str) or not x.strip() for x in data[key]):
+                raise DetailIntegrityError(f"{key} must contain nonempty proposition identifiers")
+        established = set(data["established_propositions"])
+        unknown = set(data["affirmatively_carried"]) - established
+        if unknown:
+            raise DetailIntegrityError(
+                "affirmatively carried proposition not established: "
+                + ", ".join(sorted(unknown))
+            )
+        return cls(
+            established_propositions=data["established_propositions"],
+            affirmatively_carried=data["affirmatively_carried"],
+            open_dimensions=data["open_dimensions"],
+            next_executable_transition=str(data.get("next_executable_transition") or ""),
+            global_stop_inferred=bool(data.get("global_stop_inferred", False)),
+        )
+
+    def missing_established_propositions(self) -> tuple[str, ...]:
+        retained = set(self.affirmatively_carried)
+        return tuple(p for p in self.established_propositions if p not in retained)
+
+    def incomplete_reasons(self) -> tuple[str, ...]:
+        reasons: list[str] = []
+        if self.missing_established_propositions():
+            reasons.append("established_evidence_atomized_or_omitted")
+        if self.global_stop_inferred and (self.open_dimensions or self.established_propositions):
+            reasons.append("local_gap_promoted_to_global_stop")
+        return tuple(reasons)
+
+    @property
+    def complete(self) -> bool:
+        return not self.incomplete_reasons()
+
+    def to_receipt(self) -> dict[str, Any]:
+        return {
+            "established_propositions": list(self.established_propositions),
+            "affirmatively_carried": list(self.affirmatively_carried),
+            "missing_established_propositions": list(self.missing_established_propositions()),
+            "open_dimensions": list(self.open_dimensions),
+            "next_executable_transition": self.next_executable_transition,
+            "global_stop_inferred": self.global_stop_inferred,
+            "complete": self.complete,
+            "incomplete_reasons": list(self.incomplete_reasons()),
+            "mission_continues": True,
+        }
+
+
+def enforce_evidence_continuity(
+    action: str, continuity: EvidenceContinuity
+) -> tuple[str, dict[str, Any]]:
+    """Reject omission-based synthesis, not legitimate localized legal caveats.
+
+    Missing record dimensions cannot convert affirmed propositions into
+    unproven facts or mission vetoes. Failed synthesis returns to existing
+    evidence work, without inventing sources or erasing the unresolved gap.
+    """
+    receipt = continuity.to_receipt()
+    receipt["policy_selected_action"] = action
+    if continuity.complete or action not in SYNTHESIS_ACTIONS:
+        receipt["enforced_action"] = action
+        receipt["override_applied"] = False
+        return action, receipt
+    receipt["enforced_action"] = CONTINUATION_ACTION
+    receipt["override_applied"] = True
+    return CONTINUATION_ACTION, receipt
