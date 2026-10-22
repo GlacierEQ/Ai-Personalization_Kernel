@@ -24,6 +24,7 @@ from apk.detail_integrity import (
     EvidenceContinuity, enforce_evidence_continuity,
 )
 from apk.collaboration import CollaborationFoundation
+from apk.case_ratchet import collect_case_sources, enforce_case_ratchet
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
@@ -138,6 +139,8 @@ class BootContract:
         scope: str = "conversation",
         source_coverage: Optional[dict[str, Any]] = None,
         evidence_continuity: Optional[dict[str, Any]] = None,
+        case_id: Optional[str] = None,
+        retained_case_record_ids: Optional[list[str]] = None,
     ) -> BootReceipt:
         claims = claims or []
         triggers = triggers or set()
@@ -260,6 +263,13 @@ class BootContract:
             selected_name,
             EvidenceContinuity.from_mapping(evidence_continuity),
         )
+        # Recover case-scoped historical sources from the independent ledger.
+        # An empty caller projection is not evidence that the case had no
+        # earlier filings, firsthand observations, or provider receipts.
+        selected_name, case_source_ratchet_receipt = enforce_case_ratchet(
+            selected_name,
+            collect_case_sources(self.store, case_id, retained_case_record_ids),
+        )
         steps.append(
             StepResult(
                 7,
@@ -272,6 +282,7 @@ class BootContract:
                     "ranked": [a.name for a in decision.ranked[:5]],
                     "detail_integrity": detail_integrity_receipt,
                     "evidence_continuity": evidence_continuity_receipt,
+                    "case_source_ratchet": case_source_ratchet_receipt,
                 },
             )
         )
