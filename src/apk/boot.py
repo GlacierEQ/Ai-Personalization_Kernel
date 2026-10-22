@@ -60,7 +60,7 @@ class BootContractError(RuntimeError):
 class StepResult:
     index: int
     name: str
-    status: str  # "ok" | "skipped" | "failed"
+    status: str  # observed step status; "not_*" explicitly means no effect/readback
     detail: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -265,14 +265,25 @@ class BootContract:
             )
         )
 
-        # Step 8: EXECUTE the strongest coherent available path. When an
-        # exhaustive source review is incomplete, source-detail integrity may
-        # redirect premature synthesis to continued source work.
-        steps.append(StepResult(8, STEP_NAMES[7], "ok", {"executed_action": selected_name}))
+        # Step 8: this boot contract selects an action, but has no executor.
+        # Never promote a chosen candidate into an executed provider effect.
+        steps.append(
+            StepResult(
+                8,
+                STEP_NAMES[7],
+                "not_executed",
+                {
+                    "planned_action": selected_name,
+                    "executed_action": None,
+                    "execution_performed": False,
+                    "provider_receipt": None,
+                    "reason": "no action executor invoked by BootContract.run",
+                },
+            )
+        )
 
-        # Step 9: VERIFY externally when factual/action claims require it.
-        # Verification is additive and proposition-scoped; it never turns into
-        # a generalized credibility test of the operator.
+        # Step 9: a verification *requirement* is not an actual provider readback.
+        # No external verifier is invoked by this boot contract.
         needs_verification = any(
             c["claim_type"] in ("provider_state", "public_fact") for c in classified
         ) or selected_name in ("execute_reversible_action", "inspect_provider_state", "verify_action")
@@ -280,9 +291,12 @@ class BootContract:
             StepResult(
                 9,
                 STEP_NAMES[8],
-                "ok" if needs_verification else "skipped",
+                "not_verified" if needs_verification else "skipped",
                 {
                     "verification_required": needs_verification,
+                    "verification_attempted": False,
+                    "verified": False,
+                    "readback": None,
                     "verification_posture": (
                         "test proposition/provider state; preserve user source role; "
                         "localize uncertainty"
@@ -291,29 +305,32 @@ class BootContract:
             )
         )
 
-        # Step 10: UPDATE correction/success/failure state. Corrections are
-        # supervision signals: repair failed assumptions and improve policy;
-        # do not defend the prior answer or treat the user as an opponent.
+        # Step 10: corrections are considered for selection, but this method
+        # does not update the correction ledger. Do not report a mutation.
         steps.append(
             StepResult(
                 10,
                 STEP_NAMES[9],
-                "ok",
+                "not_updated",
                 {
                     "corrections_considered": len(active_corrections),
+                    "corrections_updated": False,
+                    "correction_receipt": None,
                     "correction_posture": "supervision_signal_repair_and_learn",
                 },
             )
         )
 
-        # Step 11: PRESERVE provenance and continue.
+        # Step 11: the returned in-memory receipt is not durable persistence.
         steps.append(
             StepResult(
                 11,
                 STEP_NAMES[10],
-                "ok",
+                "not_persisted",
                 {
-                    "provenance_preserved": True,
+                    "provenance_preserved": False,
+                    "persistence_executed": False,
+                    "persistence_receipt": None,
                     "relationship_preserved": "aligned_but_independent_collaboration",
                 },
             )
