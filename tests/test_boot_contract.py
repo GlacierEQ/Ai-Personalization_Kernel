@@ -71,8 +71,10 @@ class TestVerificationStep:
             ],
         )
         verify_step = next(s for s in receipt.steps if s.name == "verify_externally")
-        assert verify_step.status == "ok"
+        assert verify_step.status == "not_verified"
         assert verify_step.detail["verification_required"] is True
+        assert verify_step.detail["verification_attempted"] is False
+        assert verify_step.detail["readback"] is None
         assert "preserve user source role" in verify_step.detail["verification_posture"]
 
     def test_verification_skipped_when_no_factual_claims(self, boot_contract: BootContract):
