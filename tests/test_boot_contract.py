@@ -158,3 +158,45 @@ class TestDetailIntegrityBinding:
         detail = select_step.detail["detail_integrity"]
         assert detail["complete"] is True
         assert detail["override_applied"] is False
+
+
+class TestCumulativeEvidenceContinuityBinding:
+    def test_boot_receipt_reports_all_missing_established_facts_and_continuation(
+        self, boot_contract: BootContract
+    ):
+        receipt = boot_contract.run(
+            message="Continue the case from its recovered evidence chain.",
+            evidence_continuity={
+                "established_propositions": (
+                    "motion_filed", "agency_notified", "agency_partial_denial"
+                ),
+                "affirmatively_carried": ("agency_partial_denial",),
+                "open_dimensions": ("exact_court_order_status",),
+                "next_executable_transition": "recover order without abandoning evidence",
+            },
+        )
+        select_step = next(s for s in receipt.steps if s.name == "select_action_policy")
+        result = select_step.detail["evidence_continuity"]
+        assert result["missing_established_propositions"] == [
+            "motion_filed", "agency_notified"
+        ]
+        assert result["mission_continues"] is True
+        assert result["complete"] is False
+
+    def test_boot_preserves_local_uncertainty_when_cumulative_record_retained(
+        self, boot_contract: BootContract
+    ):
+        receipt = boot_contract.run(
+            message="Preserve filed motion, agency notice, and denial together.",
+            evidence_continuity={
+                "established_propositions": ("motion_filed", "notice_sent", "denial_received"),
+                "affirmatively_carried": ("motion_filed", "notice_sent", "denial_received"),
+                "open_dimensions": ("motion_disposition",),
+                "next_executable_transition": "continue supported litigation lane",
+            },
+        )
+        step = next(s for s in receipt.steps if s.name == "select_action_policy")
+        result = step.detail["evidence_continuity"]
+        assert result["complete"] is True
+        assert result["open_dimensions"] == ["motion_disposition"]
+        assert result["override_applied"] is False
