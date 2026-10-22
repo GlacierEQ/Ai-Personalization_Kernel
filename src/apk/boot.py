@@ -75,9 +75,35 @@ class BootReceipt:
     operator_semantics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        # Derive proof flags from actual receipts, not from successful passage
+        # through the twelve planning steps. This contract invokes no executor,
+        # external verifier, or persistent sink on its own.
+        by_name = {step.name: step for step in self.steps}
+        execution = by_name.get("execute_action")
+        verification = by_name.get("verify_externally")
+        persistence = by_name.get("preserve_provenance")
+        effect_proven = bool(
+            execution
+            and execution.status == "ok"
+            and execution.detail.get("execution_performed") is True
+            and execution.detail.get("provider_receipt")
+            and verification
+            and verification.status == "ok"
+            and verification.detail.get("verified") is True
+            and verification.detail.get("readback")
+        )
+        persistence_proven = bool(
+            persistence
+            and persistence.status == "ok"
+            and persistence.detail.get("persistence_executed") is True
+            and persistence.detail.get("persistence_receipt")
+        )
         return {
             "timestamp": self.timestamp,
+            "receipt_scope": "action_selection_only",
             "selected_action": self.selected_action,
+            "provider_effect_verified": effect_proven,
+            "durable_persistence_verified": persistence_proven,
             "operator_semantics": self.operator_semantics,
             "steps": [s.to_dict() for s in self.steps],
         }
