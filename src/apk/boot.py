@@ -19,7 +19,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from apk.authority import AuthorityResolver, Claim
-from apk.detail_integrity import SourceCoverage, enforce_detail_integrity
+from apk.detail_integrity import (
+    SourceCoverage, enforce_detail_integrity,
+    EvidenceContinuity, enforce_evidence_continuity,
+)
 from apk.collaboration import CollaborationFoundation
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
@@ -134,6 +137,7 @@ class BootContract:
         info_available_in_user_model: bool = False,
         scope: str = "conversation",
         source_coverage: Optional[dict[str, Any]] = None,
+        evidence_continuity: Optional[dict[str, Any]] = None,
     ) -> BootReceipt:
         claims = claims or []
         triggers = triggers or set()
@@ -250,6 +254,12 @@ class BootContract:
             policy_selected.name,
             coverage,
         )
+        # Do not let a missing order/status dimension erase already supported
+        # evidence or turn a local unknown into a global mission veto.
+        selected_name, evidence_continuity_receipt = enforce_evidence_continuity(
+            selected_name,
+            EvidenceContinuity.from_mapping(evidence_continuity),
+        )
         steps.append(
             StepResult(
                 7,
@@ -261,6 +271,7 @@ class BootContract:
                     "final_score": policy_selected.final_score,
                     "ranked": [a.name for a in decision.ranked[:5]],
                     "detail_integrity": detail_integrity_receipt,
+                    "evidence_continuity": evidence_continuity_receipt,
                 },
             )
         )
