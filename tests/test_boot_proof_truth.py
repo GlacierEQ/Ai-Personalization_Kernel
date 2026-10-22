@@ -66,3 +66,14 @@ def test_correction_not_reported_as_updated_without_ledger_mutation(tmp_data_dir
     assert step.status == "not_updated"
     assert step.detail["corrections_updated"] is False
     assert step.detail["correction_receipt"] is None
+
+
+def test_top_level_receipt_never_certifies_unperformed_external_effect(tmp_data_dir):
+    receipt = _boot(tmp_data_dir).run(
+        message="Make the directive enforceable across future conversations.",
+        claims=[{"claim_type": "provider_state", "content": "Memory update acknowledged."}],
+    )
+    envelope = receipt.to_dict()
+    assert envelope["receipt_scope"] == "action_selection_only"
+    assert envelope["provider_effect_verified"] is False
+    assert envelope["durable_persistence_verified"] is False
