@@ -28,6 +28,7 @@ from apk.case_ratchet import collect_case_sources, enforce_case_ratchet
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
+from apk.source_fidelity import detect_source_fact_demotions
 from apk.context_first_router_v2 import (
     ContextFirstRouter,
     ContextRequest,
@@ -111,12 +112,24 @@ class BootContract:
             else SemanticBinding.default()
         )
 
-    def audit_output(self, text: str) -> dict[str, Any]:
-        """Detect semantic inversions before an answer/plan is propagated.
+    def audit_output(
+        self,
+        text: str,
+        source_facts: Optional[list[dict[str, Any]]] = None,
+        emitted_claims: Optional[list[dict[str, Any]]] = None,
+    ) -> dict[str, Any]:
+        """Audit the drafted answer against source status and operator semantics.
 
-        Findings are supervision/repair signals, never permission gates.
+        The source-recovery layer supplies the original firsthand propositions;
+        only their status is protected. Legitimate unknown inferences remain
+        separately investigable. Findings require draft repair, not mission stop.
         """
         findings = detect_ontology_inversions(text)
+        findings.extend(
+            detect_source_fact_demotions(
+                text, source_facts or (), emitted_claims=emitted_claims
+            )
+        )
         return {
             "schema": "glaciereq.personalization-semantic-audit.v1",
             "findings": findings,
