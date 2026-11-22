@@ -28,7 +28,7 @@ from apk.case_ratchet import collect_case_sources, enforce_case_ratchet
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
-from apk.source_fidelity import detect_source_fact_demotions
+from apk.source_fidelity import detect_source_fact_demotions, source_binding_status
 from apk.context_first_router_v2 import (
     ContextFirstRouter,
     ContextRequest,
@@ -117,6 +117,7 @@ class BootContract:
         text: str,
         source_facts: Optional[list[dict[str, Any]]] = None,
         emitted_claims: Optional[list[dict[str, Any]]] = None,
+        source_fidelity_required: bool = False,
     ) -> dict[str, Any]:
         """Audit the drafted answer against source status and operator semantics.
 
@@ -125,12 +126,19 @@ class BootContract:
         separately investigable. Findings require draft repair, not mission stop.
         """
         findings = detect_ontology_inversions(text)
+        source_status = source_binding_status(source_facts)
         findings.extend(
             detect_source_fact_demotions(
                 text, source_facts or (), emitted_claims=emitted_claims
             )
         )
+        if source_fidelity_required and source_status == "NOT_BOUND":
+            findings.append({
+                "rule": "SOURCE_FIDELITY_NOT_BOUND",
+                "repair": "Recover source facts and bind their status before completing source-sensitive output.",
+            })
         return {
+            "source_fidelity_status": source_status,
             "schema": "glaciereq.personalization-semantic-audit.v1",
             "findings": findings,
             "finding_count": len(findings),
