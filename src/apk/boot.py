@@ -19,11 +19,16 @@ from pathlib import Path
 from typing import Any, Optional
 
 from apk.authority import AuthorityResolver, Claim
-from apk.detail_integrity import SourceCoverage, enforce_detail_integrity
+from apk.detail_integrity import (
+    SourceCoverage, enforce_detail_integrity,
+    EvidenceContinuity, enforce_evidence_continuity,
+)
 from apk.collaboration import CollaborationFoundation
+from apk.case_ratchet import collect_case_sources, enforce_case_ratchet
 from apk.corrections import CorrectionLedger
 from apk.policy import CorrectionLike, DecisionContext, PolicyEngine
 from apk.operator_semantics import SemanticBinding, detect_ontology_inversions
+from apk.source_fidelity import detect_source_fact_demotions, source_binding_status
 from apk.context_first_router_v2 import (
     ContextFirstRouter,
     ContextRequest,
@@ -107,13 +112,33 @@ class BootContract:
             else SemanticBinding.default()
         )
 
-    def audit_output(self, text: str) -> dict[str, Any]:
-        """Detect semantic inversions before an answer/plan is propagated.
+    def audit_output(
+        self,
+        text: str,
+        source_facts: Optional[list[dict[str, Any]]] = None,
+        emitted_claims: Optional[list[dict[str, Any]]] = None,
+        source_fidelity_required: bool = False,
+    ) -> dict[str, Any]:
+        """Audit the drafted answer against source status and operator semantics.
 
-        Findings are supervision/repair signals, never permission gates.
+        The source-recovery layer supplies the original firsthand propositions;
+        only their status is protected. Legitimate unknown inferences remain
+        separately investigable. Findings require draft repair, not mission stop.
         """
         findings = detect_ontology_inversions(text)
+        source_status = source_binding_status(source_facts)
+        findings.extend(
+            detect_source_fact_demotions(
+                text, source_facts or (), emitted_claims=emitted_claims
+            )
+        )
+        if source_fidelity_required and source_status == "NOT_BOUND":
+            findings.append({
+                "rule": "SOURCE_FIDELITY_NOT_BOUND",
+                "repair": "Recover source facts and bind their status before completing source-sensitive output.",
+            })
         return {
+            "source_fidelity_status": source_status,
             "schema": "glaciereq.personalization-semantic-audit.v1",
             "findings": findings,
             "finding_count": len(findings),
@@ -134,6 +159,9 @@ class BootContract:
         info_available_in_user_model: bool = False,
         scope: str = "conversation",
         source_coverage: Optional[dict[str, Any]] = None,
+        evidence_continuity: Optional[dict[str, Any]] = None,
+        case_id: Optional[str] = None,
+        retained_case_record_ids: Optional[list[str]] = None,
     ) -> BootReceipt:
         claims = claims or []
         triggers = triggers or set()
@@ -250,6 +278,19 @@ class BootContract:
             policy_selected.name,
             coverage,
         )
+        # Do not let a missing order/status dimension erase already supported
+        # evidence or turn a local unknown into a global mission veto.
+        selected_name, evidence_continuity_receipt = enforce_evidence_continuity(
+            selected_name,
+            EvidenceContinuity.from_mapping(evidence_continuity),
+        )
+        # Recover case-scoped historical sources from the independent ledger.
+        # An empty caller projection is not evidence that the case had no
+        # earlier filings, firsthand observations, or provider receipts.
+        selected_name, case_source_ratchet_receipt = enforce_case_ratchet(
+            selected_name,
+            collect_case_sources(self.store, case_id, retained_case_record_ids),
+        )
         steps.append(
             StepResult(
                 7,
@@ -261,6 +302,8 @@ class BootContract:
                     "final_score": policy_selected.final_score,
                     "ranked": [a.name for a in decision.ranked[:5]],
                     "detail_integrity": detail_integrity_receipt,
+                    "evidence_continuity": evidence_continuity_receipt,
+                    "case_source_ratchet": case_source_ratchet_receipt,
                 },
             )
         )

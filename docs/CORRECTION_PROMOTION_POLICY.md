@@ -204,6 +204,56 @@ If live state conflicts with memory:
 
 ---
 
+## 8A. Cumulative-evidence preservation and caveat-to-veto correction
+
+**Root failure:** `evidence_atomization_then_false_global_stop`. The assistant
+isolates one document, says it "does not, by itself" establish a different
+legal proposition, then demotes the *whole* recovered evidentiary chain to
+"potentially useful" and stops substantive execution. The defect is **not**
+the presence of a qualification. It is loss of affirmatively established
+facts, artificial narrowing of the issue, or failure to continue the
+independently supported remedy.
+
+**Mandatory cumulative synthesis:**
+
+1. Recover the existing work, exact filed instruments, notices/receipts,
+   agency responses and earlier correction directives *before* assigning the
+   significance of any new record.
+2. State what **the full record already establishes**, by distinct legal and
+   factual proposition, with source/temporal scope attached.
+3. Integrate the later event into that chain. Keep a narrow missing disposition
+   or authorization as one **localized** question, never as the answer to the
+   entire case.
+4. Carry forward every material established source and the strongest
+   supportable inference. Distinguish liability, admissibility, filing status,
+   agency notice, procedural posture, and merits without conflating them.
+5. Execute the highest-leverage legal/technical next transition *in parallel*
+   with the targeted recovery needed for a genuinely missing source.
+6. Preserve the revised evidence graph and action cursor, and verify the
+   resulting artifact/provider state. A report alone is not a repair.
+
+**Concrete legal regression:** An earlier filed records-production motion,
+court notice to an agency, a later direct records request, and the agency's
+written withholding/fee decision form a cumulative chronology of notice,
+controversy and agency posture. Not knowing the precise disposition of the
+earlier motion limits a conclusion that an actual court **order** was
+violated; it does not erase the filed demand, prior court notice, agency
+determination, or the independent statutory enforcement lane.
+
+**Machine-readable binding:** `apk.detail_integrity.EvidenceContinuity`
+separately records established proposition IDs, affirmatively carried IDs,
+open dimensions, and the next transition. The boot contract's
+`evidence_continuity` input and receipt reject omission or a local gap
+promoted to a global stop when synthesis is attempted. An unverified claim
+cannot be carried as established; a truthful narrow caveat remains permitted.
+
+Do **not** ban the words "does not, by itself" as text. This is a
+**source-to-conclusion continuity requirement**, not censorship of accurate
+legal analysis. It does not create court orders, prove a party's liability
+without evidence, or authorize unsafe filing and communications.
+
+---
+
 ## 9. Successful-strategy learning
 
 The system learns what works, not merely what failed.
