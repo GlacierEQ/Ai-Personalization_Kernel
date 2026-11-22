@@ -112,3 +112,29 @@ def test_draft_audit_uses_source_fidelity_and_existing_semantic_checks(tmp_data_
 
     original = contract.audit_output("A failed gate blocks the mission.")
     assert any(x["rule"] == "GATE_AS_MISSION_VETO" for x in original["findings"])
+
+
+def test_empty_source_binding_is_explicitly_not_checked():
+    from apk.source_fidelity import source_binding_status
+    assert source_binding_status([]) == "NOT_BOUND"
+    assert source_binding_status(FACTS) == "BOUND"
+
+
+def test_source_sensitive_draft_cannot_treat_missing_binding_as_clean(tmp_data_dir: Path):
+    contract = BootContract(
+        user_model_path=tmp_data_dir / "user_model.json",
+        corrections_path=tmp_data_dir / "corrections.jsonl",
+        policy=PolicyEngine.from_file(tmp_data_dir / "policy_weights.json"),
+    )
+    result = contract.audit_output(
+        "Cherry's phone was stolen.", source_fidelity_required=True
+    )
+    assert result["source_fidelity_status"] == "NOT_BOUND"
+    assert result["repair_required"] is True
+    assert any(f["rule"] == "SOURCE_FIDELITY_NOT_BOUND" for f in result["findings"])
+
+    bound = contract.audit_output(
+        "Cherry owns the Fold6.", source_facts=FACTS, source_fidelity_required=True
+    )
+    assert bound["source_fidelity_status"] == "BOUND"
+    assert bound["repair_required"] is False
