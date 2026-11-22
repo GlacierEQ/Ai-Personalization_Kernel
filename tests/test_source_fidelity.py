@@ -138,3 +138,37 @@ def test_source_sensitive_draft_cannot_treat_missing_binding_as_clean(tmp_data_d
     )
     assert bound["source_fidelity_status"] == "BOUND"
     assert bound["repair_required"] is False
+
+
+def test_original_cherry_report_defect_is_detected_across_sentences():
+    facts = [{
+        "id": "fold6-session-match",
+        "statement": "Cherry identified the historical Fold6 session as her stolen phone.",
+        "status": "operator_confirmed",
+        "anchors": [
+            "Cherry has identified that Fold6 environment as relevant to her missing device"
+        ],
+    }]
+    report = (
+        "Cherry has identified that Fold6 environment as relevant to her missing device. "
+        "Its identity should ultimately be confirmed with a matching IMEI or serial number."
+    )
+    findings = detect_source_fact_demotions(report, facts)
+    assert len(findings) == 1
+    assert findings[0]["fact_id"] == "fold6-session-match"
+
+
+def test_adjacent_imei_unknown_does_not_demote_device_identification():
+    facts = [{
+        "id": "fold6-session-match",
+        "statement": "Cherry identified the historical Fold6 session as her stolen phone.",
+        "status": "operator_confirmed",
+        "anchors": [
+            "Cherry has identified that Fold6 environment as relevant to her missing device"
+        ],
+    }]
+    report = (
+        "Cherry has identified that Fold6 environment as relevant to her missing device. "
+        "Its IMEI remains unverified."
+    )
+    assert detect_source_fact_demotions(report, facts) == []
