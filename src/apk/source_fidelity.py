@@ -17,8 +17,13 @@ _STATUS_DEMOTION = re.compile(
     r"\b(?:unverified|unconfirmed|unsupported|speculative|merely\s+alleged|"
     r"not\s+(?:independently\s+)?(?:verified|confirmed|established|proven)|"
     r"(?:cannot|can't|could\s+not|couldn't)\s+(?:verify|confirm|establish|prove)|"
-    r"(?:no|without)\s+(?:independent\s+)?(?:proof|evidence|confirmation))\b",
+    r"(?:no|without)\s+(?:independent\s+)?(?:proof|evidence|confirmation)|"
+    r"should\s+(?:ultimately\s+)?be\s+(?:independently\s+)?(?:verified|confirmed)|"
+    r"requires?\s+(?:independent\s+)?(?:verification|confirmation))\b",
     re.I,
+)
+_ANAPHORIC_FACT = re.compile(
+    r"^(?:its|this|that|the)\s+(?:identity|ownership|identification|attribution)\b", re.I
 )
 _PROTECTED_STATUSES = frozenset({
     "operator_confirmed", "user_confirmed", "user_firsthand", "firsthand", "documented"
@@ -70,8 +75,14 @@ def detect_source_fact_demotions(
         if fact_id in protected:
             raise ValueError(f"duplicate protected fact id: {fact_id!r}")
         protected[fact_id] = fact
-        for clause in clauses:
-            if not _matches_anchor(clause, anchors):
+        for index, clause in enumerate(clauses):
+            direct = _matches_anchor(clause, anchors)
+            anaphoric = (
+                index > 0
+                and _matches_anchor(clauses[index - 1], anchors)
+                and bool(_ANAPHORIC_FACT.match(clause))
+            )
+            if not (direct or anaphoric):
                 continue
             if not _STATUS_DEMOTION.search(clause):
                 continue
