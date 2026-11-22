@@ -103,3 +103,8 @@ def detect_source_fact_demotions(
             "repair": "Preserve recovered source status; attach uncertainty to its true target.",
         })
     return findings
+
+
+def source_binding_status(source_facts: Sequence[Mapping[str, Any]] | None) -> str:
+    """Missing or empty source input is unbound, not checked-and-clean."""
+    return "BOUND" if source_facts else "NOT_BOUND"
